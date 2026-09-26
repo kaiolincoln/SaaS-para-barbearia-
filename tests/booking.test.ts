@@ -17,11 +17,24 @@ const mocks = vi.hoisted(() => ({
   create: vi.fn(),
   transaction: vi.fn(),
   revalidate: vi.fn(),
+  update: vi.fn(),
+  list: vi.fn(),
+  remove: vi.fn(),
 }))
 vi.mock("next-auth", () => ({ getServerSession: mocks.session }))
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidate }))
 vi.mock("@/_lib/auth", () => ({ authOptions: {} }))
-vi.mock("@/_lib/prisma", () => ({ db: { $transaction: mocks.transaction } }))
+vi.mock("@/_lib/prisma", () => ({
+  db: {
+    $transaction: mocks.transaction,
+    booking: {
+      findFirst: mocks.existing,
+      updateMany: mocks.update,
+      findMany: mocks.list,
+      deleteMany: mocks.remove,
+    },
+  },
+}))
 import { createBooking } from "../app/_actions/create-booking"
 
 const hours = [
@@ -32,6 +45,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   mocks.session.mockResolvedValue({ user: { id: "user" } })
   mocks.service.mockResolvedValue({
+    durationMinutes: 30,
     barbershopId: "shop",
     professionals: [{ id: "professional", barbershopId: "shop" }],
     barbershop: { workingHours: hours },
@@ -101,6 +115,9 @@ test("reserva válida usa o usuário da sessão e transação serializável", as
       professionalId: "professional",
       date,
       userId: "user",
+      durationMinutes: 30,
+      endsAt: new Date(date.getTime() + 30 * 60000),
+      status: "CONFIRMED",
     },
   })
   expect(mocks.transaction).toHaveBeenCalledWith(expect.any(Function), {
@@ -149,6 +166,7 @@ test("interface, consulta e validação concordam em São Paulo, não em UTC", (
     {
       professionalId: "professional",
       date: bookingInstant("2030-01-07", "09:00"),
+      endsAt: bookingInstant("2030-01-07", "09:30"),
     },
   ]
   expect(
@@ -192,6 +210,7 @@ test("horários respeitam minutos de abertura, dia fechado e instante atual", ()
 
 test("profissional vinculado de outra barbearia também é rejeitado", async () => {
   mocks.service.mockResolvedValue({
+    durationMinutes: 30,
     barbershopId: "shop",
     professionals: [{ id: "professional", barbershopId: "other" }],
     barbershop: { workingHours: hours },
@@ -203,4 +222,64 @@ test("profissional vinculado de outra barbearia também é rejeitado", async () 
       date,
     }),
   ).rejects.toThrow("Profissional")
+})
+
+test("cancelamento preserva registro e consultas excluem canceladas", async () => {
+  const { deleteBooking } = await import("../app/_actions/delete-booking")
+  const { getConfirmedBookings } = await import(
+    "../app/_data/get-confirmed-bookings"
+  )
+  mocks.existing.mockResolvedValue({ service: { barbershopId: "shop" } })
+  mocks.update.mockResolvedValue({ count: 1 })
+  await deleteBooking("booking")
+  expect(mocks.remove).not.toHaveBeenCalled()
+  expect(mocks.update).toHaveBeenCalledWith({
+    where: { id: "booking", userId: "user", status: "CONFIRMED" },
+    data: { status: "CANCELLED" },
+  })
+  await getConfirmedBookings()
+  expect(mocks.list).toHaveBeenCalledWith(
+    expect.objectContaining({ where: { userId: "user", status: "CONFIRMED" } }),
+  )
+  for (const path of ["/", "/bookings", "/admin/barbershops/shop"])
+    expect(mocks.revalidate).toHaveBeenCalledWith(path)
+})
+
+test("durações diferentes respeitam sobreposição e limite do expediente", () => {
+  const now = new Date("2029-01-01")
+  const professionals = [{ id: "p" }]
+  const busy = [
+    {
+      professionalId: "p",
+      date: bookingInstant("2030-01-07", "10:00"),
+      endsAt: bookingInstant("2030-01-07", "11:30"),
+    },
+  ]
+  const short = availableBookingTimes(
+    "2030-01-07",
+    hours,
+    professionals,
+    busy,
+    now,
+    30,
+  )
+  const long = availableBookingTimes(
+    "2030-01-07",
+    hours,
+    professionals,
+    busy,
+    now,
+    90,
+  )
+  expect(short).toContain("09:30")
+  expect(short).not.toContain("11:00")
+  expect(short).toContain("11:30")
+  expect(long).not.toContain("09:00")
+  expect(long).not.toContain("11:00")
+  expect(long).toContain("11:30")
+  expect(long.at(-1)).toBe("16:30")
+  expect(() =>
+    validateBookingTime(bookingInstant("2030-01-07", "17:00"), hours, now, 90),
+  ).toThrow()
+  expect(() => validateBookingTime(date, hours, now, 45)).toThrow()
 })

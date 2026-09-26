@@ -28,6 +28,10 @@ vi.mock("@/_lib/prisma", async () => {
 import { db } from "@/_lib/prisma"
 import { createBooking } from "@/_actions/create-booking"
 import { deleteProfessional } from "@/_actions/delete-professional"
+import { deleteBooking } from "@/_actions/delete-booking"
+import { completeBooking } from "@/_actions/complete-booking"
+import { createReview } from "@/_actions/create-review"
+import { withRatings } from "@/_data/reviews"
 import { bookingInstant } from "@/_lib/booking-time"
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)(
@@ -87,6 +91,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
       session.mockResolvedValue({ user: { id: ownerId, role: "USER" } })
     })
     afterAll(async () => {
+      await db.review.deleteMany({ where: { userId: ownerId } })
       await db.booking.deleteMany({ where: { userId: ownerId } })
       await db.barbershopService.deleteMany({ where: { barbershopId: shopId } })
       await db.professional.deleteMany({ where: { barbershopId: shopId } })
@@ -115,6 +120,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
           professionalId,
           userId: ownerId,
           date: new Date("2020-01-01T12:00:00Z"),
+          endsAt: new Date("2020-01-01T12:30:00Z"),
         },
       })
       expect(await deleteProfessional(professionalId, shopId)).toHaveProperty(
@@ -126,7 +132,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
         await db.professional.findUnique({ where: { id: professionalId } }),
       ).not.toBeNull()
     })
-    test("other owner is denied; authorized deletion removes past bookings and resource", async () => {
+    test("history prevents deletion even after the appointment", async () => {
       session.mockResolvedValue({
         user: { id: randomUUID(), role: "BARBERSHOP_ADMIN" },
       })
@@ -134,21 +140,110 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
         "success",
         false,
       )
-      expect(
-        await db.professional.findUnique({ where: { id: professionalId } }),
-      ).not.toBeNull()
       session.mockResolvedValue({ user: { id: ownerId, role: "USER" } })
-      await db.booking.deleteMany({
-        where: { professionalId, date: { gte: new Date() } },
+      expect(await deleteProfessional(professionalId, shopId)).toHaveProperty(
+        "success",
+        false,
+      )
+      expect(await db.booking.count({ where: { professionalId } })).toBe(2)
+    })
+    test("cancellation frees availability and retains the record", async () => {
+      const date = bookingInstant("2030-01-07", "09:00")
+      const booking = await db.booking.findFirstOrThrow({
+        where: { professionalId, date },
+      })
+      await deleteBooking(booking.id)
+      expect(
+        await db.booking.findUnique({ where: { id: booking.id } }),
+      ).toHaveProperty("status", "CANCELLED")
+      await expect(deleteBooking(booking.id)).rejects.toThrow()
+      await createBooking({ serviceId, professionalId, date })
+      expect(await db.booking.count({ where: { professionalId, date } })).toBe(
+        2,
+      )
+    })
+    test("duration snapshot survives edits; long overlapping appointments conflict", async () => {
+      await db.barbershopService.update({
+        where: { id: serviceId },
+        data: { durationMinutes: 90 },
+      })
+      const date = bookingInstant("2030-01-07", "10:00")
+      await createBooking({ serviceId, professionalId, date })
+      await db.barbershopService.update({
+        where: { id: serviceId },
+        data: { durationMinutes: 30 },
+      })
+      await expect(
+        createBooking({
+          serviceId,
+          professionalId,
+          date: bookingInstant("2030-01-07", "11:00"),
+        }),
+      ).rejects.toThrow("ocupado")
+      const saved = await db.booking.findFirstOrThrow({
+        where: { professionalId, date },
+      })
+      expect(saved.durationMinutes).toBe(90)
+      expect(saved.endsAt).toEqual(bookingInstant("2030-01-07", "11:30"))
+      await createBooking({ serviceId, professionalId, date: saved.endsAt })
+    })
+    test("only completed booking holder reviews once; aggregate uses real reviews", async () => {
+      const booking = await db.booking.findFirstOrThrow({
+        where: { professionalId, date: { lt: new Date() } },
+      })
+      const form = new FormData()
+      form.set("bookingId", booking.id)
+      form.set("rating", "5")
+      form.set("comment", "Muito bom")
+      session.mockResolvedValue(null)
+      expect(await createReview(form)).toHaveProperty("success", false)
+      session.mockResolvedValue({ user: { id: ownerId, role: "USER" } })
+      const future = await db.booking.findFirstOrThrow({
+        where: {
+          professionalId,
+          status: "CONFIRMED",
+          date: { gt: new Date() },
+        },
+      })
+      expect(await completeBooking(future.id)).toHaveProperty("success", false)
+      expect(await createReview(form)).toHaveProperty("success", false)
+      session.mockResolvedValue({
+        user: { id: randomUUID(), role: "BARBERSHOP_ADMIN" },
+      })
+      expect(await completeBooking(booking.id)).toHaveProperty("success", false)
+      session.mockResolvedValue({ user: { id: ownerId, role: "USER" } })
+      expect(await completeBooking(booking.id)).toHaveProperty("success", true)
+      await expect(deleteBooking(booking.id)).rejects.toThrow()
+      session.mockResolvedValue({
+        user: { id: randomUUID(), role: "SUPER_ADMIN" },
+      })
+      expect(await createReview(form)).toHaveProperty("success", false)
+      session.mockResolvedValue({ user: { id: ownerId, role: "USER" } })
+      for (const rating of ["0", "6", "2.5", "abc"]) {
+        form.set("rating", rating)
+        expect(await createReview(form)).toHaveProperty("success", false)
+      }
+      form.set("rating", "5")
+      const results = await Promise.all([
+        createReview(form),
+        createReview(form),
+      ])
+      expect(results.filter((r) => r.success)).toHaveLength(1)
+      expect(await createReview(form)).toMatchObject({
+        success: false,
+        error: "Esta reserva já foi avaliada.",
+      })
+      expect(await db.review.count({ where: { bookingId: booking.id } })).toBe(
+        1,
+      )
+      expect((await withRatings([{ id: shopId }]))[0]).toMatchObject({
+        averageRating: 5,
+        reviewCount: 1,
       })
       expect(await deleteProfessional(professionalId, shopId)).toHaveProperty(
         "success",
-        true,
+        false,
       )
-      expect(await db.booking.count({ where: { professionalId } })).toBe(0)
-      expect(
-        await db.professional.findUnique({ where: { id: professionalId } }),
-      ).toBeNull()
     })
   },
 )

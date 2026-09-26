@@ -15,6 +15,7 @@ const m = vi.hoisted(() => ({
   booking: vi.fn(),
   bookingCount: vi.fn(),
   deleteBookings: vi.fn(),
+  updateBookings: vi.fn(),
   hours: vi.fn(),
   transaction: vi.fn(),
 }))
@@ -42,6 +43,7 @@ vi.mock("@/_lib/prisma", () => ({
       findFirst: m.booking,
       count: m.bookingCount,
       deleteMany: m.deleteBookings,
+      updateMany: m.updateBookings,
     },
     workingHours: { upsert: m.hours },
   },
@@ -70,6 +72,7 @@ const serviceForm = () =>
     name: "Corte",
     description: "Corte de cabelo",
     price: "30",
+    durationMinutes: "30",
     professionalIds: "professional",
   })
 const profForm = () =>
@@ -175,14 +178,16 @@ test.each(["anonymous", "other", "super"])(
 )
 test("deleteBooking scopes lookup and deletion to the session user", async () => {
   m.booking.mockResolvedValue({ service: { barbershopId: shopId } })
-  m.deleteBookings.mockResolvedValue({ count: 1 })
+  m.updateBookings.mockResolvedValue({ count: 1 })
   await deleteBooking("booking")
   expect(m.booking).toHaveBeenCalledWith(
     expect.objectContaining({ where: { id: "booking", userId: "owner" } }),
   )
-  expect(m.deleteBookings).toHaveBeenCalledWith({
-    where: { id: "booking", userId: "owner" },
+  expect(m.updateBookings).toHaveBeenCalledWith({
+    where: { id: "booking", userId: "owner", status: "CONFIRMED" },
+    data: { status: "CANCELLED" },
   })
+  expect(m.deleteBookings).not.toHaveBeenCalled()
 })
 test("professional from another shop cannot be edited or deleted", async () => {
   m.professional.mockResolvedValue(null)
@@ -226,17 +231,16 @@ test.each(["professional", "service"])(
     expect(m.deleteService).not.toHaveBeenCalled()
   },
 )
-test("past bookings are removed inside the serializable professional deletion transaction", async () => {
-  await deleteProfessional("professional", shopId)
-  expect(m.transaction).toHaveBeenCalledWith(expect.any(Function), {
-    isolationLevel: "Serializable",
-  })
-  expect(m.deleteBookings).toHaveBeenCalledWith({
-    where: { professionalId: "professional", date: { lt: expect.any(Date) } },
-  })
-  expect(m.deleteBookings.mock.invocationCallOrder[0]).toBeLessThan(
-    m.deleteProfessional.mock.invocationCallOrder[0],
+test("resource deletion preserves booking history", async () => {
+  m.bookingCount.mockResolvedValue(1)
+  expect(await deleteProfessional("professional", shopId)).toHaveProperty(
+    "success",
+    false,
   )
+  expect(m.bookingCount).toHaveBeenCalledWith({
+    where: { professionalId: "professional" },
+  })
+  expect(m.deleteBookings).not.toHaveBeenCalled()
 })
 
 test("dia fechado sem horários pode ser salvo preservando horários anteriores", async () => {
@@ -270,3 +274,21 @@ test.each([
   expect(await updateWorkingHours(data)).toHaveProperty("error")
   expect(m.hours).not.toHaveBeenCalled()
 })
+
+test.each(["0", "15", "45", "-30", "30.5", "750", "abc"])(
+  "service rejects invalid duration %s",
+  async (duration) => {
+    const data = serviceForm()
+    data.set("durationMinutes", duration)
+    expect(await addService({ success: false }, data)).toHaveProperty(
+      "success",
+      false,
+    )
+    expect(await editService({ success: false }, data)).toHaveProperty(
+      "success",
+      false,
+    )
+    expect(m.createService).not.toHaveBeenCalled()
+    expect(m.updateService).not.toHaveBeenCalled()
+  },
+)

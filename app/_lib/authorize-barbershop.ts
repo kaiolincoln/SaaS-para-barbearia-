@@ -5,6 +5,29 @@ import { Prisma, Role } from "@prisma/client"
 
 export class AccessError extends Error {}
 
+// Avaliações são ações do cliente: exigem titularidade do atendimento concluído,
+// não propriedade administrativa da barbearia. Mantém a autorização centralizada.
+export async function requireCompletedBookingAccess(
+  bookingId: string,
+  client: Prisma.TransactionClient = db,
+) {
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) throw new AccessError("Usuário não autenticado.")
+  const booking = await client.booking.findFirst({
+    where: { id: bookingId, userId: session.user.id, status: "COMPLETED" },
+    select: {
+      id: true,
+      userId: true,
+      service: { select: { barbershopId: true } },
+    },
+  })
+  if (!booking)
+    throw new AccessError(
+      "Avaliação exige um atendimento finalizado da sua conta.",
+    )
+  return booking
+}
+
 // Propriedade autoriza também USER; SUPER_ADMIN é a única exceção.
 export async function requireBarbershopAccess(
   barbershopId: string,

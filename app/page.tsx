@@ -1,3 +1,4 @@
+import { withRatings, comparePopularity } from "@/_data/reviews"
 import Header from "@/_components/ui/header"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
@@ -14,12 +15,8 @@ import { getConfirmedBookings } from "./_data/get-confirmed-bookings"
 
 const Home = async () => {
   const session = await getServerSession(authOptions)
-  const barbershops = await db.barbershop.findMany({})
-  const popularBarbershops = await db.barbershop.findMany({
-    orderBy: {
-      name: "desc",
-    },
-  })
+  const barbershops = await withRatings(await db.barbershop.findMany({}))
+  const popularBarbershops = [...barbershops].sort(comparePopularity)
   const confirmedBookings = await getConfirmedBookings()
 
   return (

@@ -1,7 +1,8 @@
-import BarbershopItem from "@/_components/ui/barbershop-item";
-import Header from "@/_components/ui/header";
-import Search from "@/_components/ui/search";
-import { db } from "@/_lib/prisma";
+import { withRatings } from "@/_data/reviews"
+import BarbershopItem from "@/_components/ui/barbershop-item"
+import Header from "@/_components/ui/header"
+import Search from "@/_components/ui/search"
+import { db } from "@/_lib/prisma"
 
 interface BarbershopsPageProps {
   searchParams: {
@@ -11,32 +12,34 @@ interface BarbershopsPageProps {
 }
 
 const BarbershopsPage = async ({ searchParams }: BarbershopsPageProps) => {
-  const barbershops = await db.barbershop.findMany({
-    where: {
-      OR: [
-        searchParams?.title
-          ? {
-              name: {
-                contains: searchParams?.title,
-                mode: "insensitive",
-              },
-            }
-          : {},
-        searchParams.service
-          ? {
-              services: {
-                some: {
-                  name: {
-                    contains: searchParams.service,
-                    mode: "insensitive",
+  const barbershops = await withRatings(
+    await db.barbershop.findMany({
+      where: {
+        OR: [
+          searchParams?.title
+            ? {
+                name: {
+                  contains: searchParams?.title,
+                  mode: "insensitive",
+                },
+              }
+            : {},
+          searchParams.service
+            ? {
+                services: {
+                  some: {
+                    name: {
+                      contains: searchParams.service,
+                      mode: "insensitive",
+                    },
                   },
                 },
-              },
-            }
-          : {},
-      ],
-    },
-  })
+              }
+            : {},
+        ],
+      },
+    }),
+  )
 
   return (
     <div>

@@ -9,9 +9,14 @@ test("consultas públicas limitam campos e usam limites do dia em São Paulo", a
   await getBookings({ day: "2030-01-07", serviceId: "service" })
   expect(find).toHaveBeenCalledTimes(2)
   for (const [args] of find.mock.calls) {
-    expect(args.select).toEqual({ professionalId: true, date: true })
+    expect(args.select).toEqual({
+      professionalId: true,
+      date: true,
+      endsAt: true,
+    })
+    expect(args.where.status).toBe("CONFIRMED")
+    expect(args.where.endsAt).toEqual({ gt: new Date("2030-01-07T03:00:00Z") })
     expect(args.where.date).toEqual({
-      gte: new Date("2030-01-07T03:00:00Z"),
       lt: new Date("2030-01-08T03:00:00Z"),
     })
   }

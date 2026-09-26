@@ -1,4 +1,5 @@
 "use client"
+import type { RatingSummary } from "@/_data/reviews"
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetTrigger } from "@/components/ui/sheet"
@@ -9,7 +10,7 @@ import Image from "next/image"
 import Link from "next/link"
 
 interface BarbershopInfoProps {
-  barbershop: Barbershop
+  barbershop: Barbershop & RatingSummary
 }
 
 const BarbershopInfo = ({ barbershop }: BarbershopInfoProps) => {
@@ -58,7 +59,11 @@ const BarbershopInfo = ({ barbershop }: BarbershopInfoProps) => {
         </div>
         <div className="flex items-center gap-2">
           <StarIcon className="fill-primary text-primary" size={18} />
-          <p className="text-sm">5,0 (499 avaliações)</p>
+          <p className="text-sm">
+            {barbershop.averageRating?.toFixed(1).replace(".", ",") ??
+              "Sem avaliações"}{" "}
+            ({barbershop.reviewCount} avaliações)
+          </p>
         </div>
       </div>
     </div>

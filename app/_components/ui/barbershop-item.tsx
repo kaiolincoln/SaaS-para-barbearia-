@@ -1,5 +1,6 @@
+import type { RatingSummary } from "@/_data/reviews"
 import { Barbershop } from "@prisma/client"
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -7,7 +8,7 @@ import { StarIcon } from "lucide-react"
 import Link from "next/link"
 
 interface BarbershopItemProps {
-  barbershop: Barbershop
+  barbershop: Barbershop & RatingSummary
 }
 
 const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
@@ -28,7 +29,11 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
             variant="secondary"
           >
             <StarIcon size={12} className="fill-primary text-primary" />
-            <p className="text-xs font-semibold">5,0</p>
+            <p className="text-xs font-semibold">
+              {barbershop.averageRating?.toFixed(1).replace(".", ",") ??
+                "Sem avaliações"}{" "}
+              ({barbershop.reviewCount})
+            </p>
           </Badge>
         </div>
 

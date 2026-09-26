@@ -9,13 +9,16 @@ interface GetDayBookingsParams {
 }
 
 export const getDayBookings = async (params: GetDayBookingsParams) => {
+  const bounds = bookingDayBounds(params.day)
   const bookings = await db.booking.findMany({
-    select: { professionalId: true, date: true },
+    select: { professionalId: true, date: true, endsAt: true },
     where: {
+      status: "CONFIRMED",
       service: {
         barbershopId: params.barbershopId,
       },
-      date: bookingDayBounds(params.day),
+      date: { lt: bounds.lt },
+      endsAt: { gt: bounds.gte },
     },
   })
 

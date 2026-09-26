@@ -1,10 +1,10 @@
 ﻿"use server"
 
-import { revalidatePath } from "next/cache"
+import { revalidateBarbershop } from "@/_lib/revalidate-barbershop"
 import { db } from "@/_lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/_lib/auth"
-import { validateBookingTime } from "@/_lib/booking-time"
+import { bookingEnd, validateBookingTime } from "@/_lib/booking-time"
 
 interface CreateBookingParams {
   serviceId: string
@@ -16,8 +16,9 @@ export const createBooking = async (params: CreateBookingParams) => {
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) throw new Error("Usuário não autenticado.")
 
+  let barbershopId: string
   try {
-    await db.$transaction(
+    barbershopId = await db.$transaction(
       async (transaction) => {
         const service = await transaction.barbershopService.findUnique({
           where: { id: params.serviceId },
@@ -36,14 +37,19 @@ export const createBooking = async (params: CreateBookingParams) => {
         ) {
           throw new Error("Profissional inválido para este serviço.")
         }
-        validateBookingTime(params.date, service.barbershop.workingHours)
+        validateBookingTime(
+          params.date,
+          service.barbershop.workingHours,
+          new Date(),
+          service.durationMinutes,
+        )
+        const endsAt = bookingEnd(params.date, service.durationMinutes)
         const existing = await transaction.booking.findFirst({
           where: {
             professionalId: params.professionalId,
-            date: {
-              gt: new Date(params.date.getTime() - 30 * 60_000),
-              lt: new Date(params.date.getTime() + 30 * 60_000),
-            },
+            status: "CONFIRMED",
+            date: { lt: endsAt },
+            endsAt: { gt: params.date },
           },
         })
         if (existing) throw new Error("Horário ocupado. Escolha outro horário.")
@@ -52,9 +58,13 @@ export const createBooking = async (params: CreateBookingParams) => {
             serviceId: params.serviceId,
             professionalId: params.professionalId,
             date: params.date,
+            endsAt,
+            durationMinutes: service.durationMinutes,
             userId: session.user.id,
+            status: "CONFIRMED",
           },
         })
+        return service.barbershopId
       },
       { isolationLevel: "Serializable" },
     )
@@ -71,6 +81,5 @@ export const createBooking = async (params: CreateBookingParams) => {
     }
     throw error
   }
-  revalidatePath("/")
-  revalidatePath("/bookings")
+  revalidateBarbershop(barbershopId)
 }

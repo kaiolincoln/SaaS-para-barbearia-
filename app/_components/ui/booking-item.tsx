@@ -4,7 +4,8 @@ import { Prisma } from "@prisma/client"
 import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
-import { isFuture } from "date-fns"
+import { bookingStatusLabels } from "@/_lib/booking-status"
+import ReviewForm from "./review-form"
 import { formatBookingDate } from "@/_lib/booking-time"
 import {
   Sheet,
@@ -37,6 +38,7 @@ import { Loader2 } from "lucide-react" // ✅ Importar ícone de loading
 interface BookingItemProps {
   booking: Prisma.BookingGetPayload<{
     include: {
+      review: { select: { id: true } }
       service: {
         include: {
           barbershop: true
@@ -52,7 +54,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
   const {
     service: { barbershop },
   } = booking
-  const isConfirmed = isFuture(booking.date)
+  const isConfirmed = booking.status === "CONFIRMED"
 
   const handleCancelBooking = async () => {
     setIsDeleteLoading(true) // ✅ Ativar loading
@@ -82,7 +84,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                 className="w-fit"
                 variant={isConfirmed ? "default" : "secondary"}
               >
-                {isConfirmed ? "Confirmado" : "Finalizado"}
+                {bookingStatusLabels[booking.status]}
               </Badge>
               <h3 className="font-semibold">{booking.service.name}</h3>
               <div className="flex items-center gap-2">
@@ -142,16 +144,25 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                 className="w-fit"
                 variant={isConfirmed ? "default" : "secondary"}
               >
-                {isConfirmed ? "Confirmado" : "Finalizado"}
+                {bookingStatusLabels[booking.status]}
               </Badge>
 
               <div className="mb-3 mt-6">
                 <BookingSummary
                   service={booking.service}
                   selectedDate={booking.date}
+                  durationMinutes={booking.durationMinutes}
                 />
               </div>
 
+              {booking.status === "COMPLETED" && !booking.review && (
+                <ReviewForm bookingId={booking.id} />
+              )}
+              {booking.review && (
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Avaliação enviada.
+                </p>
+              )}
               <div className="space-y-3">
                 {barbershop.phones.map((phone, index) => (
                   <PhoneItem key={index} phone={phone} />

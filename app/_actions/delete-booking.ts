@@ -13,8 +13,9 @@ export const deleteBooking = async (bookingId: string) => {
     select: { service: { select: { barbershopId: true } } },
   })
   if (!booking) throw new Error("Reserva não encontrada ou acesso negado.")
-  const result = await db.booking.deleteMany({
-    where: { id: bookingId, userId: session.user.id },
+  const result = await db.booking.updateMany({
+    where: { id: bookingId, userId: session.user.id, status: "CONFIRMED" },
+    data: { status: "CANCELLED" },
   })
   if (!result.count) throw new Error("Reserva não encontrada ou acesso negado.")
   revalidateBarbershop(booking.service.barbershopId)

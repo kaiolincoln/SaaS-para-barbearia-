@@ -23,6 +23,7 @@ const EditServiceSchema = z.object({
     .url("A URL da imagem deve ser válida.")
     .optional()
     .or(z.literal("")),
+  durationMinutes: z.coerce.number().int().min(30).max(720).multipleOf(30),
   professionalIds: z.array(z.string()).optional(),
 })
 
@@ -34,6 +35,7 @@ export type FormState = {
     description?: string[]
     price?: string[]
     imageUrl?: string[]
+    durationMinutes?: string[]
     professionalIds?: string[]
   } | null
 }

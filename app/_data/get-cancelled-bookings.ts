@@ -4,13 +4,13 @@ import { getServerSession } from "next-auth"
 import { db } from "../_lib/prisma"
 import { authOptions } from "../_lib/auth"
 
-export const getConcludedBookings = async () => {
+export const getCancelledBookings = async () => {
   const session = await getServerSession(authOptions)
   if (!session?.user) return []
   return db.booking.findMany({
     where: {
       userId: session.user.id,
-      status: "COMPLETED",
+      status: "CANCELLED",
     },
     include: {
       review: { select: { id: true } },

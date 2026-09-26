@@ -13,7 +13,14 @@ enum Role {
   SUPER_ADMIN
 }
 
+enum BookingStatus {
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
 model User {
+  reviews Review[]
   id          String      @id @default(uuid())
   email       String      @unique
   password    String?
@@ -28,6 +35,7 @@ model User {
 }
 
 model Barbershop {
+  reviews Review[]
   id            String              @id @default(uuid())
   name          String
   address       String
@@ -44,6 +52,7 @@ model Barbershop {
 }
 
 model BarbershopService {
+  durationMinutes Int @default(30)
   id           String         @id @default(uuid())
   name         String
   description  String
@@ -56,6 +65,10 @@ model BarbershopService {
 }
 
 model Booking {
+  status BookingStatus @default(CONFIRMED)
+  review Review?
+  durationMinutes Int @default(30)
+  endsAt DateTime @default(now())
   id             String            @id @default(uuid())
   userId         String
   user           User              @relation(fields: [userId], references: [id])
@@ -90,3 +103,18 @@ model Professional {
   services     BarbershopService[]
 }
 
+
+model Review {
+  id String @id @default(uuid())
+  bookingId String @unique
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  barbershopId String
+  barbershop Barbershop @relation(fields: [barbershopId], references: [id], onDelete: Restrict)
+  rating Int
+  comment String?
+  createdAt DateTime @default(now())
+
+  @@index([barbershopId, createdAt])
+}

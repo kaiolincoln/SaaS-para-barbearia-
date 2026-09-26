@@ -96,6 +96,8 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
           service.barbershop.workingHours,
           service.professionals,
           availability.bookings,
+          new Date(),
+          service.durationMinutes,
         )
       : []
   const selectedDate = useMemo(
@@ -108,6 +110,7 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
           selectedDate,
           service.professionals,
           availability.bookings,
+          service.durationMinutes,
         )
       : []
 
@@ -183,6 +186,9 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
             <div className="flex-1">
               <h3 className="text-sm font-semibold">{service.name}</h3>
               <p className="text-sm text-gray-400">{service.description}</p>
+              <p className="text-sm text-gray-400">
+                {service.durationMinutes} minutos
+              </p>
             </div>
             <div className="mt-2 flex items-center justify-between">
               <p className="text-sm font-bold text-primary">

@@ -4,6 +4,7 @@ import { formatBookingDate } from "@/_lib/booking-time"
 interface BookingSummaryProps {
   service: BarbershopService
   selectedDate: Date
+  durationMinutes?: number
   professional?: Professional
 }
 
@@ -11,6 +12,7 @@ const BookingSummary = ({
   service,
   selectedDate,
   professional,
+  durationMinutes = service.durationMinutes,
 }: BookingSummaryProps) => {
   return (
     <div className="space-y-3 rounded-lg border p-5">
@@ -32,6 +34,10 @@ const BookingSummary = ({
       <div className="flex justify-between">
         <p className="text-sm text-gray-400">Horário</p>
         <p className="text-sm">{formatBookingDate(selectedDate, "HH:mm")}</p>
+      </div>
+      <div className="flex justify-between">
+        <p className="text-sm text-gray-400">Duração</p>
+        <p className="text-sm">{durationMinutes} min</p>
       </div>
       {professional && (
         <div className="mt-3 flex justify-between border-t pt-3">

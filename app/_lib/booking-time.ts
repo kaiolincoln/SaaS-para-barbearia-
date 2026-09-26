@@ -15,7 +15,7 @@ export type Schedule = {
   startTime: string
   endTime: string
 }
-export type OccupiedSlot = { professionalId: string; date: Date }
+export type OccupiedSlot = { professionalId: string; date: Date; endsAt: Date }
 
 export function formatBookingDate(date: Date | string, pattern: string) {
   return formatInTimeZone(date, BOOKING_TIME_ZONE, pattern, { locale: ptBR })
@@ -70,6 +70,7 @@ export function validateBookingTime(
   date: Date,
   hours: Schedule[],
   now = new Date(),
+  durationMinutes = SLOT_MINUTES,
 ) {
   if (
     !(date instanceof Date) ||
@@ -77,6 +78,7 @@ export function validateBookingTime(
     date <= now
   )
     throw new Error("Escolha uma data futura válida.")
+  assertDuration(durationMinutes)
   const schedule = hours.find(
     (item) => item.dayOfWeek === bookingWeekday(bookingDay(date)),
   )
@@ -84,7 +86,7 @@ export function validateBookingTime(
   if (
     !schedule?.isOpen ||
     minutes < toMinutes(schedule.startTime) ||
-    minutes + SLOT_MINUTES > toMinutes(schedule.endTime)
+    minutes + durationMinutes > toMinutes(schedule.endTime)
   )
     throw new Error("Horário fora do funcionamento da barbearia.")
   if (
@@ -98,14 +100,19 @@ export function freeProfessionals<T extends { id: string }>(
   date: Date,
   professionals: T[],
   bookings: OccupiedSlot[],
+  durationMinutes = SLOT_MINUTES,
 ) {
   return professionals.filter(
     (professional) =>
       !bookings.some(
         (booking) =>
           booking.professionalId === professional.id &&
-          Math.abs(new Date(booking.date).getTime() - date.getTime()) <
-            SLOT_MINUTES * 60_000,
+          intervalsOverlap(
+            date,
+            bookingEnd(date, durationMinutes),
+            new Date(booking.date),
+            new Date(booking.endsAt),
+          ),
       ),
   )
 }
@@ -115,20 +122,47 @@ export function availableBookingTimes(
   professionals: { id: string }[],
   bookings: OccupiedSlot[],
   now = new Date(),
+  durationMinutes = SLOT_MINUTES,
 ) {
+  assertDuration(durationMinutes)
   const schedule = hours.find((item) => item.dayOfWeek === bookingWeekday(day))
   if (!schedule?.isOpen) return []
   const times: string[] = []
   for (
     let minutes =
       Math.ceil(toMinutes(schedule.startTime) / SLOT_MINUTES) * SLOT_MINUTES;
-    minutes + SLOT_MINUTES <= toMinutes(schedule.endTime);
+    minutes + durationMinutes <= toMinutes(schedule.endTime);
     minutes += SLOT_MINUTES
   ) {
     const time = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
     const date = bookingInstant(day, time)
-    if (date > now && freeProfessionals(date, professionals, bookings).length)
+    if (
+      date > now &&
+      freeProfessionals(date, professionals, bookings, durationMinutes).length
+    )
       times.push(time)
   }
   return times
+}
+
+export function assertDuration(minutes: number) {
+  if (
+    !Number.isInteger(minutes) ||
+    minutes < SLOT_MINUTES ||
+    minutes > 720 ||
+    minutes % SLOT_MINUTES !== 0
+  )
+    throw new Error("Duração deve ser múltipla de 30, entre 30 e 720 minutos.")
+}
+export function bookingEnd(date: Date, durationMinutes: number) {
+  assertDuration(durationMinutes)
+  return new Date(date.getTime() + durationMinutes * 60_000)
+}
+export function intervalsOverlap(
+  start: Date,
+  end: Date,
+  otherStart: Date,
+  otherEnd: Date,
+) {
+  return start < otherEnd && otherStart < end
 }

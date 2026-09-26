@@ -1,24 +1,26 @@
+import { withRatings } from "@/_data/reviews"
+import { formatBookingDate } from "@/_lib/booking-time"
 // CAMINHO: app/barbershops/[id]/page.tsx
 
-import { db } from "@/_lib/prisma";
-import { notFound } from "next/navigation";
-import BarbershopInfo from "./_components/barbershop-info";
+import { db } from "@/_lib/prisma"
+import { notFound } from "next/navigation"
+import BarbershopInfo from "./_components/barbershop-info"
 
-import ServiceItem from  "@/_components/ui/service-item"; 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/_lib/auth";
+import ServiceItem from "@/_components/ui/service-item"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/_lib/auth"
 
 interface BarbershopPageProps {
   params: {
-    id?: string;
-  };
+    id?: string
+  }
 }
 
 const BarbershopPage = async ({ params }: BarbershopPageProps) => {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession(authOptions)
 
   if (!params.id) {
-    return notFound();
+    return notFound()
   }
 
   const barbershop = await db.barbershop.findUnique({
@@ -28,23 +30,59 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
     include: {
       services: {
         include: {
-          professionals: true, 
+          professionals: true,
         },
       },
       workingHours: true,
-      professionals: true, 
+      professionals: true,
     },
-  });
+  })
 
   if (!barbershop) {
-    return notFound();
+    return notFound()
   }
+
+  const [ratedShop] = await withRatings([barbershop])
+  const reviews = await db.review.findMany({
+    where: { barbershopId: barbershop.id },
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      createdAt: true,
+      user: { select: { name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 50,
+  })
 
   return (
     <div>
-      <BarbershopInfo barbershop={barbershop} />
+      <BarbershopInfo barbershop={ratedShop} />
 
-      <div className="px-5 py-6 flex flex-col gap-4">
+      <section className="space-y-3 p-5">
+        <h2 className="font-bold">Avaliações recentes</h2>
+        {reviews.length === 0 && <p>Ainda não há avaliações.</p>}
+        {reviews.map((review) => (
+          <article key={review.id} className="rounded-lg border p-3">
+            <p>
+              {review.user.name} · {review.rating}/5
+            </p>
+            <p className="text-sm text-gray-400">
+              {formatBookingDate(review.createdAt, "dd/MM/yyyy")}
+            </p>
+            {review.comment && (
+              <p className="whitespace-pre-wrap break-words">
+                {review.comment}
+              </p>
+            )}
+          </article>
+        ))}
+        {ratedShop.reviewCount > 50 && (
+          <p>Exibindo as 50 avaliações mais recentes.</p>
+        )}
+      </section>
+      <div className="flex flex-col gap-4 px-5 py-6">
         {barbershop.services.map((service) => (
           <ServiceItem
             key={service.id}
@@ -57,7 +95,7 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
         ))}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default BarbershopPage;
+export default BarbershopPage

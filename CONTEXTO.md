@@ -6,9 +6,11 @@ Documento de referência para manutenção e futuras tarefas de desenvolvimento.
 
 Aplicação de descoberta de barbearias e agendamento de serviços, iniciada no bootcamp Full Stack Club e ampliada com profissionais, expediente e administração. Interface em português brasileiro, valores em reais e tema escuro com destaque verde.
 
-O cliente pesquisa uma barbearia, escolhe serviço, dia, horário e profissional, confirma a reserva e consulta ou cancela seus agendamentos. O proprietário tem um painel com serviços, profissionais, expediente e reservas futuras.
+O cliente pesquisa uma barbearia, escolhe serviço, dia, horário e profissional, confirma a reserva e consulta ou cancela seus agendamentos. O proprietário tem um painel com serviços, profissionais, expediente e histórico de reservas; finaliza manualmente atendimentos confirmados após o término.
 
-Não há implementação de pagamentos, assinaturas SaaS, avaliações reais, geolocalização, notificações, recuperação de senha ou cadastro funcional de barbearias pela interface. “Populares” ordena barbearias pelo nome decrescente; as notas e o número de avaliações são textos fixos. O mapa é a imagem estática `public/map.png`.
+Onda 4.2: reservas possuem status persistido e cancelamento sem exclusão. Onda 4.3: serviços têm duração configurável em passos de 30 minutos (30–720), considerada na disponibilidade. Onda 4.4: clientes avaliam uma vez cada reserva concluída, com nota 1–5 e comentário opcional de até 1000 caracteres. Notas e contagem vêm do banco; “Populares” ordena por média decrescente, contagem decrescente, nome e ID para desempate. Sem avaliações, mostra indicação explícita.
+
+Não há implementação de pagamentos, assinaturas SaaS, geolocalização ou cadastro funcional de barbearias pela interface. Notificações (4.5) e recuperação de senha (4.6) foram dispensadas explicitamente pelo usuário nesta etapa. O mapa é a imagem estática `public/map.png`.
 
 ## 2. Stack e organização
 
@@ -69,11 +71,17 @@ O botão “Cadastrar minha barbearia” não possui ação. O botão Admin apar
 
 Papéis: `USER` (padrão), `BARBERSHOP_ADMIN` e `SUPER_ADMIN`. A propriedade é representada por `Barbershop.ownerId`; não existe `barbershopId` no modelo User.
 
-Não há duração no serviço, status da reserva, preço histórico, pagamento ou exclusão lógica. “Confirmado” e “Finalizado” são derivados da comparação da data com o momento atual. O cancelamento apaga o registro. A receita futura soma os preços atuais dos serviços das reservas futuras; não representa receita recebida.
+Onda 4.2: Booking.status é enum CONFIRMED (default), COMPLETED ou CANCELLED. Reservas antigas ficam CONFIRMED; não se presume atendimento realizado pela data. Só o titular cancela uma reserva CONFIRMED; proprietário/SUPER_ADMIN pode finalizá-la após endsAt. Status terminais não voltam a confirmado.
+
+Onda 4.3: BarbershopService.durationMinutes e Booking.durationMinutes têm default 30. A reserva guarda a duração e endsAt como snapshot; editar o serviço não altera o histórico. A migration preenche endsAt das reservas antigas com date + 30 minutos e impõe CHECK de duração/intervalo. Novas escritas devem enviar endsAt coerente, mesmo havendo default SQL.
+
+Onda 4.4: Review possui bookingId único, userId, barbershopId, rating (CHECK 1–5), comment opcional e createdAt. As FKs restringem exclusão; a action centraliza autorização pelo titular de reserva COMPLETED. Não existem avaliações automáticas ou valores fictícios.
+
+Não há preço histórico nem pagamento. Receita futura considera apenas CONFIRMED no futuro, somando preços atuais; não representa receita recebida.
 
 O banco não impõe unicidade de profissional/horário nem a igualdade de barbearia entre profissional e serviço na relação muitos-para-muitos. As chaves estrangeiras das reservas restringem exclusões de registros relacionados.
 
-As dez migrations incluem `20260926173717_add_user_image`, gerada com `prisma migrate dev` em PostgreSQL 16 descartável. Todas foram aplicadas por `migrate deploy` em outro banco vazio, e `migrate diff` não encontrou diferença em relação ao schema. Algumas migrations antigas adicionam colunas obrigatórias sem padrão: bases existentes precisam de reconciliação prévia, sem reset automático. Nenhuma migration foi aplicada ao Neon nesta tarefa. Se `image` já existir por alteração manual, comparar o schema e o histórico antes de aplicar/resolver a nova migration.
+As doze migrations incluem `20260926173717_add_user_image`, gerada com `prisma migrate dev` em PostgreSQL 16 descartável. Todas foram aplicadas por `migrate deploy` em outro banco vazio, e `migrate diff` não encontrou diferença em relação ao schema. Algumas migrations antigas adicionam colunas obrigatórias sem padrão: bases existentes precisam de reconciliação prévia, sem reset automático. Nenhuma migration foi aplicada ao Neon nesta tarefa. Se `image` já existir por alteração manual, comparar o schema e o histórico antes de aplicar/resolver a nova migration.
 
 ## 5. Fluxo de agendamento
 
@@ -83,10 +91,10 @@ As dez migrations incluem `20260926173717_add_user_image`, gerada com `prisma mi
 4. A interface gera horários em passos de 30 minutos, arredonda a abertura para a próxima meia hora e exige espaço para terminar antes do fechamento. Exibe horários com ao menos um profissional habilitado livre.
 5. O cliente escolhe o profissional e envia `{ serviceId, professionalId, date }` para `createBooking`.
 6. O servidor exige sessão e usa uma transação serializável para carregar o serviço, conferir o vínculo do profissional, validar a data, procurar conflitos e gravar com o `userId` da sessão.
-7. A consulta de conflito considera o mesmo profissional com início estritamente entre 30 minutos antes e 30 minutos depois da data solicitada. Reservas exatamente adjacentes são permitidas.
-8. Erro Prisma `P2034` vira orientação para atualizar e tentar novamente. Não há repetição automática. Sucesso revalida `/` e `/bookings`.
+7. A consulta considera somente CONFIRMED do mesmo profissional com date < novo endsAt e endsAt > novo início. Intervalos são semiabertos; reservas adjacentes são permitidas.
+8. Erro Prisma `P2034` vira orientação para atualizar e tentar novamente. Não há repetição automática. Sucesso revalida home, busca, reservas e rotas específicas pública/administrativa da barbearia.
 
-`validateBookingTime` exige data válida e futura, expediente aberto em `America/Sao_Paulo`, início dentro do expediente, duração implícita de 30 minutos, minutos múltiplos de 30 e segundos/milissegundos zerados. Dia sem configuração é indisponível. Não há suporte a expediente que atravessa a meia-noite, pausas, feriados ou agenda individual do profissional.
+`validateBookingTime` exige data válida e futura, expediente aberto em `America/Sao_Paulo`, início dentro do expediente, duração configurada no serviço, minutos múltiplos de 30 e segundos/milissegundos zerados. Dia sem configuração é indisponível. Não há suporte a expediente que atravessa a meia-noite, pausas, feriados ou agenda individual do profissional.
 
 ### Onda 2 — expediente e fuso (implementada)
 
@@ -113,11 +121,11 @@ GoogleProvider e PrismaAdapter foram removidos da configuração, da interface e
 | add/edit/delete de serviço      | Helper; criação/edição validam todos os profissionais da mesma barbearia dentro de transação serializável                                                                           |
 | add/edit/delete de profissional | Helper e vínculo do profissional com a barbearia; edição é Server Action                                                                                                            |
 | updateWorkingHours              | Helper antes da escrita                                                                                                                                                             |
-| deleteBooking                   | Exclusivo do titular autenticado, inclusive para administradores; filtro por usuário na leitura e exclusão                                                                          |
-| getDayBookings/getBookings      | Públicas; select apenas professionalId/date                                                                                                                                         |
+| deleteBooking                   | Exclusivo do titular autenticado, inclusive para administradores; filtro por usuário na leitura e atualização de status                                                                          |
+| getDayBookings/getBookings      | Públicas; select apenas professionalId/date/endsAt                                                                                                                                         |
 | Cadastro                        | Zod no servidor, nome obrigatório, e-mail válido, senha com pelo menos 8 caracteres e no máximo 72 bytes (limite bcrypt); telefone mapeado para tell; resposta apenas id/name/email |
 
-Exclusões de serviço/profissional bloqueiam reservas futuras e removem reservas passadas e recurso na mesma transação serializável. A remoção de histórico é deliberada porque os vínculos são obrigatórios e o escopo não inclui exclusão lógica. As telas administrativa, pública e de reservas são revalidadas por helper comum. O painel permite SUPER_ADMIN e valida acesso antes de consultar dados de clientes; seleciona apenas o nome do cliente.
+Exclusões de serviço/profissional bloqueiam qualquer reserva vinculada, inclusive cancelada ou concluída, para preservar histórico e avaliações. Recursos sem histórico podem ser excluídos. Esta regra substitui a remoção de reservas passadas das Ondas 1–3. As telas administrativa, pública e de reservas são revalidadas por helper comum. O painel permite SUPER_ADMIN e valida acesso antes de consultar dados de clientes; seleciona apenas o nome do cliente.
 
 Verificação da Onda 1: 53 testes passaram (40 autorização, 8 cadastro, 5 agenda existente). Os testes parametrizados verificam todas as sete mutações administrativas sem sessão, com outro proprietário e com role desconhecida, sem escritas; também cobrem proprietário autorizado, SUPER_ADMIN, cancelamento, vínculos cruzados e bloqueio de exclusão com reservas futuras. A checagem de tipos passou. Lint continua pendente para a Onda 3.
 
@@ -125,7 +133,7 @@ Verificação da Onda 1: 53 testes passaram (40 autorização, 8 cadastro, 5 age
 
 Formulários de serviços e edição de profissional usam `useFormState/useFormStatus`; adição de profissional e expediente usam FormData manual. As actions administrativas retornam objetos com sucesso/erro, às vezes erros por campo; criação e cancelamento de reserva lançam exceções.
 
-O painel reúne reservas futuras dos serviços e soma seus preços. Cada serviço tem reservas ordenadas, mas o `flatMap` final não faz uma ordenação global. Sheets permitem adicionar/editar serviços e profissionais, e dialogs confirmam exclusões.
+O painel reúne reservas por status real e permite finalizar atendimentos cujo intervalo terminou. Indicadores financeiros e contagem futura consideram apenas confirmadas futuras. Cada serviço tem reservas ordenadas, mas o `flatMap` final não faz uma ordenação global. Sheets permitem adicionar/editar serviços e profissionais, e dialogs confirmam exclusões.
 
 O formulário de expediente salva um dia por vez com validação condicional descrita na Onda 2.
 
@@ -154,7 +162,7 @@ npm run dev
 
 Configurar `.env` antes das operações de banco. `npm ci` executa o script `prepare`, que inicializa Husky e gera o Prisma Client. `npm run build` compila produção; `npm start` inicia o build; `npm run lint`, `npm test` e `npx tsc --noEmit` verificam o projeto.
 
-O seed (`npx prisma db seed`) começa apagando reservas, profissionais, expediente, serviços, barbearias e usuários. Usar apenas em banco descartável após revisar o script. Ele cria um usuário, seis barbearias, três serviços e um profissional por barbearia, e uma reserva de exemplo.
+O seed (`npx prisma db seed`) começa apagando avaliações, reservas, profissionais, expediente, serviços, barbearias e usuários. Usar apenas em banco descartável após revisar o script. Ele cria um usuário, seis barbearias, três serviços e um profissional por barbearia, e uma reserva de exemplo.
 
 Limitações do seed: o usuário chamado admin mantém role USER; não são criados horários nem vínculos entre serviços e profissionais; profissionais ficam sem imagem; a reserva usa o instante atual mais dez dias, sem adequação aos intervalos ou expediente. Portanto, a carga não prepara um fluxo completo de agendamento válido. Há credenciais demonstrativas fixas no script, inadequadas para ambientes reais.
 
@@ -174,10 +182,10 @@ Validação e roteiro reprodutível: [docs/VALIDACAO-ONDAS-1-3.md](docs/VALIDACA
 ## 10. Limites e pendências fora das três ondas
 
 - Duração fixa de 30 minutos, sem feriados, pausa ou expediente noturno.
-- Exclusão administrativa de serviço/profissional apaga reservas passadas; preservar histórico exige modelagem futura.
+- Recursos com histórico não podem ser excluídos; arquivamento de serviços/profissionais ainda não existe.
 - Role no JWT é atualizada no login; revogação imediata de papéis exige outra política de sessão.
 - Seed continua destrutivo e incompleto para demonstração (detalhes na seção 8); não foi executado nesta tarefa.
-- Imagens opcionais/fallback ausente, contratos de serialização Prisma e paginação merecem uma revisão própria. Não foram adicionadas features da Onda 4.
+- Imagens opcionais/fallback ausente, contratos de serialização Prisma e paginação merecem uma revisão própria.
 - `npm install` reportou 22 vulnerabilidades na árvore existente (2 baixas, 5 moderadas, 13 altas, 2 críticas). Atualização de dependências/framework precisa de tarefa dedicada; nenhum `audit fix --force` foi aplicado.
 - O aviso de caniuse-lite desatualizado não bloqueou o build.
 
@@ -192,3 +200,12 @@ Para alterar banco, editar `prisma/schema.prisma` e criar uma migration coerente
 Para interface, distinguir componentes de negócio em `_components/ui` das primitivas em `components/ui`; reutilizar `cn`, tokens globais e os componentes existentes. Atualizar este documento quando houver mudança de rotas, autenticação, relações, regras de agenda ou comandos.
 
 A revisão considerou páginas, componentes, actions, bibliotecas, tipos, estilos, configurações, migrations, seed e testes locais. Dependências em `node_modules`, builds em `.next` e binários gerados não foram auditados linha a linha. O workspace já continha várias mudanças staged e unstaged; este contexto descreve esse estado local, sem presumir equivalência com uma versão publicada.
+
+
+## 12. Onda 4 — status, duração e avaliações
+
+Implementados itens 4.2–4.4. Notificações e recuperação de senha ficaram para depois por decisão explícita do usuário. Não houve implementação de 4.1, ausente no anexo.
+
+As duas novas migrations foram geradas e testadas em PostgreSQL local descartável. Colunas adicionadas a tabelas existentes possuem defaults; os vínculos obrigatórios da nova tabela Review são fornecidos pela action, sem inventar IDs/defaults que violariam integridade. O formulário aparece na reserva COMPLETED não avaliada; detalhe da barbearia lista até 50 avaliações recentes e a contagem total. Somente nome, nota, comentário e data são públicos.
+
+Consulte `docs/VALIDACAO-ONDA-4.md` para verificações e implantação. Nenhuma migration desta etapa foi aplicada ao Neon. Antes de executar esta versão contra esse banco, reconciliar o histórico/schema (incluindo image da Onda 3) e aplicar as migrations pendentes com `prisma migrate deploy`; não usar reset nem seed.

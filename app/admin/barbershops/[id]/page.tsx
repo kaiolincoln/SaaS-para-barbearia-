@@ -1,3 +1,6 @@
+import { Badge } from "@/components/ui/badge"
+import { bookingStatusLabels } from "@/_lib/booking-status"
+import CompleteBookingButton from "@/_components/ui/complete-booking-button"
 import { requireBarbershopAccess } from "@/_lib/authorize-barbershop"
 import { redirect } from "next/navigation"
 import Link from "next/link"
@@ -36,7 +39,6 @@ const BarbershopDetailsPage = async ({
         include: {
           professionals: true,
           bookings: {
-            where: { date: { gte: new Date() } },
             include: {
               user: { select: { name: true } },
               service: true,
@@ -57,7 +59,10 @@ const BarbershopDetailsPage = async ({
   }
 
   const allBookings = barbershop.services.flatMap((s) => s.bookings ?? [])
-  const totalRevenue = allBookings.reduce(
+  const futureBookings = allBookings.filter(
+    (b) => b.status === "CONFIRMED" && b.date >= new Date(),
+  )
+  const totalRevenue = futureBookings.reduce(
     (sum, booking) =>
       sum + (booking.service ? Number(booking.service.price) : 0),
     0,
@@ -89,7 +94,7 @@ const BarbershopDetailsPage = async ({
         </div>
         <div className="rounded-lg border p-4">
           <p className="text-sm text-gray-400">Agendamentos Futuros</p>
-          <p className="text-2xl font-bold">{allBookings.length}</p>
+          <p className="text-2xl font-bold">{futureBookings.length}</p>
         </div>
       </div>
 
@@ -133,7 +138,7 @@ const BarbershopDetailsPage = async ({
         <div className="flex-1">
           <div className="rounded-lg border p-4">
             <h2 className="mb-4 text-lg font-semibold">
-              Próximos Agendamentos
+              Agendamentos e histórico
             </h2>
             <div className="space-y-3">
               {allBookings.map((booking) => (
@@ -144,6 +149,13 @@ const BarbershopDetailsPage = async ({
                   <div className="flex flex-col">
                     <p className="font-semibold">{booking.service.name}</p>
                     <p className="text-sm text-gray-400">{booking.user.name}</p>
+                    <Badge variant="secondary">
+                      {bookingStatusLabels[booking.status]}
+                    </Badge>
+                    {booking.status === "CONFIRMED" &&
+                      booking.endsAt <= new Date() && (
+                        <CompleteBookingButton bookingId={booking.id} />
+                      )}
                   </div>
                   <div className="text-right">
                     <p className="text-sm">

@@ -20,20 +20,15 @@ export const deleteProfessional = async (
         })
         if (!resource)
           throw new AccessError("Profissional não encontrado nesta barbearia.")
-        const now = new Date()
         if (
           await tx.booking.count({
-            where: { professionalId, date: { gte: now } },
+            where: { professionalId },
           })
         ) {
           throw new AccessError(
-            "Profissional com agendamentos futuros não pode ser removido.",
+            "Profissional com histórico de agendamentos não pode ser removido.",
           )
         }
-        // Relação obrigatória: remove histórico passado atomicamente com o recurso.
-        await tx.booking.deleteMany({
-          where: { professionalId, date: { lt: now } },
-        })
         await tx.professional.delete({ where: { id: professionalId } })
         return resource.barbershopId
       },
