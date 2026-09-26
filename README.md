@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+﻿# SaaS para Barbearia
 
-## Getting Started
+Aplicação de serviços e agendamentos iniciada no bootcamp Full Stack Club e ampliada localmente com profissionais, horários de funcionamento e administração.
 
-First, run the development server:
+Consulte [CONTEXTO.md](./CONTEXTO.md) para o mapa do código, arquitetura, regras de negócio, permissões, configuração e pendências conhecidas.
+
+## Problema e solução
+
+Clientes precisam escolher um serviço e um profissional disponível. A barbearia precisa organizar seu expediente e acompanhar reservas. O projeto utiliza Next.js com Server Actions, autenticação NextAuth e persistência relacional com Prisma e PostgreSQL.
+
+## Decisões técnicas
+
+- A versão local utiliza Next.js 14, React 18, TypeScript e Tailwind CSS. Ela difere da versão pública consultada no GitHub.
+- O modelo relaciona reservas, usuários, serviços e profissionais.
+- O servidor valida data futura, expediente no fuso `America/Sao_Paulo`, intervalos de 30 minutos e vínculo entre profissional e serviço.
+- Consulta de conflito e criação da reserva ocorrem em uma transação serializável. Conflitos de concorrência retornam uma orientação para atualizar e tentar novamente.
+- A interface respeita os minutos de abertura/fechamento e verifica profissionais habilitados para o serviço.
+
+## Instalação
+
+Requisitos: Node.js 22.12+, npm e PostgreSQL exclusivo de desenvolvimento.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm ci
+npx prisma generate
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Crie `.env` com as variáveis de `.env.example`. Use credenciais locais próprias. Depois:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npx prisma migrate dev
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Acesse `http://localhost:3000`. Não execute o seed em um banco existente sem revisar `prisma/seed.ts`.
 
-## Learn More
+## Testes
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm test
+npx tsc --noEmit
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+A suíte valida expediente, fuso, data futura, intervalos, autenticação, profissional habilitado, conflito e criação da reserva com o usuário da sessão. As operações de banco são simuladas: a concorrência real de PostgreSQL precisa de teste de integração antes da publicação.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Resultado e limites
 
-## Deploy on Vercel
+A versão local possui páginas de serviços, reservas e administração. As capturas disponíveis no portfólio ilustram a interface. Não há demo pública publicada nesta revisão.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Antes de uma demo pública:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Revisar autorização de todas as Server Actions administrativas. Por exemplo, `update-working-hours.ts` ainda precisa validar sessão e propriedade da barbearia.
+- A interface de datas utiliza o fuso do navegador; o servidor aplica São Paulo. Unificar a seleção para visitantes em outros fusos.
+- Agendamentos assumem duração fixa de 30 minutos. Serviços com durações diferentes exigem modelagem adicional.
+- O login Google usa PrismaAdapter, mas o schema local não contém todos os modelos padrão do adapter. Validar esse fluxo ou mantê-lo desativado antes de anunciá-lo.
+- Revisar dependências e usar somente dados fictícios no ambiente de demonstração.
+
+As alterações locais já existentes foram preservadas. A publicação exige sincronizar esta versão com o repositório e configurar hospedagem, banco e autenticação; nenhuma dessas operações foi executada automaticamente.

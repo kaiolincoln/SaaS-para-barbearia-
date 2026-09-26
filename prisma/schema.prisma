@@ -1,12 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
 }
 
 datasource db {
@@ -14,42 +7,86 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  USER
+  BARBERSHOP_ADMIN
+  SUPER_ADMIN
+}
+
 model User {
-  id        String    @id @default(uuid())
-  email     String
-  name      String
-  createdAt DateTime  @default(now())
-  update    DateTime  @updatedAt
-  bookings  Booking[] // Adicionei esta relação para navegação inversa
+  id          String      @id @default(uuid())
+  email       String      @unique
+  password    String?
+  barbershops Barbershop[]
+  tell        String?
+  image       String?
+  name        String
+  createdAt   DateTime    @default(now())
+  update      DateTime    @updatedAt
+  bookings    Booking[]
+  role        Role        @default(USER) 
 }
 
 model Barbershop {
-  id        String              @id @default(uuid())
-  name      String
-  address   String
-  createdAt DateTime            @default(now())
-  update    DateTime            @updatedAt
-  services  BarbershopService[]
+  id            String              @id @default(uuid())
+  name          String
+  address       String
+  phones        String[]
+  ownerId       String
+  owner         User                @relation(fields: [ownerId], references: [id])
+  workingHours  WorkingHours[]
+  professionals Professional[]
+  description   String
+  imageUrl      String
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  services      BarbershopService[]
 }
 
 model BarbershopService {
-  id           String     @id @default(uuid())
+  id           String         @id @default(uuid())
   name         String
   description  String
   imageUrl     String
-  price        Decimal    @db.Decimal(10, 2)
-  barbershopId String // Corrigido para camelCase
-  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+  price        Decimal        @db.Decimal(10, 2)
+  barbershopId String
+  barbershop   Barbershop     @relation(fields: [barbershopId], references: [id])
   bookings     Booking[]
+  professionals Professional[]
 }
 
 model Booking {
-  id        String            @id @default(uuid())
-  userId    String
-  user      User              @relation(fields: [userId], references: [id])
-  serviceId String
-  service   BarbershopService @relation(fields: [serviceId], references: [id])
-  date      DateTime
-  createdAt DateTime          @default(now()) // Corrigido de DataTime
-  updatedAt DateTime          @updatedAt
+  id             String            @id @default(uuid())
+  userId         String
+  user           User              @relation(fields: [userId], references: [id])
+  serviceId      String
+  service        BarbershopService @relation(fields: [serviceId], references: [id])
+  date           DateTime
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  professionalId String
+  professional   Professional      @relation(fields: [professionalId], references: [id])
 }
+
+model WorkingHours {
+  id           String     @id @default(uuid())
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+  isOpen       Boolean    @default(true)
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+
+  @@unique([barbershopId, dayOfWeek])
+}
+
+model Professional {
+  id           String     @id @default(uuid())
+  name         String
+  imageUrl     String?
+  barbershopId String
+  barbershop   Barbershop @relation(fields: [barbershopId], references: [id])
+  bookings     Booking[]
+  services     BarbershopService[]
+}
+
