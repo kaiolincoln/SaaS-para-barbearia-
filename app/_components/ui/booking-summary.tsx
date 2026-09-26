@@ -15,7 +15,7 @@ const BookingSummary = ({
   durationMinutes = service.durationMinutes,
 }: BookingSummaryProps) => {
   return (
-    <div className="space-y-3 rounded-lg border p-5">
+    <div className="space-y-3 rounded-md border p-5">
       <div className="flex justify-between">
         <h3 className="font-semibold">{service.name}</h3>
         <p className="text-sm font-bold">
@@ -26,22 +26,22 @@ const BookingSummary = ({
         </p>
       </div>
       <div className="flex justify-between">
-        <p className="text-sm text-gray-400">Data</p>
+        <p className="text-sm text-muted-foreground">Data</p>
         <p className="text-sm">
           {formatBookingDate(selectedDate, "dd 'de' MMMM")}
         </p>
       </div>
       <div className="flex justify-between">
-        <p className="text-sm text-gray-400">Horário</p>
+        <p className="text-sm text-muted-foreground">Horário</p>
         <p className="text-sm">{formatBookingDate(selectedDate, "HH:mm")}</p>
       </div>
       <div className="flex justify-between">
-        <p className="text-sm text-gray-400">Duração</p>
+        <p className="text-sm text-muted-foreground">Duração</p>
         <p className="text-sm">{durationMinutes} min</p>
       </div>
       {professional && (
         <div className="mt-3 flex justify-between border-t pt-3">
-          <p className="text-sm text-gray-400">Barbeiro</p>
+          <p className="text-sm text-muted-foreground">Barbeiro</p>
           <p className="text-sm font-semibold">{professional.name}</p>
         </div>
       )}

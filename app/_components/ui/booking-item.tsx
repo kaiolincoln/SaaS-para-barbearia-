@@ -1,7 +1,8 @@
 "use client"
+import DuotonePhoto from "./duotone-photo"
 
 import { Prisma } from "@prisma/client"
-import { Avatar, AvatarImage } from "@/components/ui/avatar"
+import { Avatar } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent } from "@/components/ui/card"
 import { bookingStatusLabels } from "@/_lib/booking-status"
@@ -89,7 +90,12 @@ const BookingItem = ({ booking }: BookingItemProps) => {
               <h3 className="font-semibold">{booking.service.name}</h3>
               <div className="flex items-center gap-2">
                 <Avatar className="h-6 w-6">
-                  <AvatarImage src={booking.service.barbershop.imageUrl} />
+                  <DuotonePhoto
+                    src={booking.service.barbershop.imageUrl}
+                    alt=""
+                    width={24}
+                    height={24}
+                  />
                 </Avatar>
                 <p className="text-sm">{booking.service.barbershop.name}</p>
               </div>
@@ -127,10 +133,15 @@ const BookingItem = ({ booking }: BookingItemProps) => {
           </div>
 
           <div className="px-5">
-            <Card className="relative z-10 -mt-5 w-full rounded-xl">
+            <Card className="relative z-10 -mt-5 w-full rounded-md">
               <CardContent className="flex items-center gap-3 p-3">
                 <Avatar>
-                  <AvatarImage src={barbershop.imageUrl} />
+                  <DuotonePhoto
+                    src={barbershop.imageUrl}
+                    alt=""
+                    width={40}
+                    height={40}
+                  />
                 </Avatar>
                 <div>
                   <h3 className="font-bold">{barbershop.name}</h3>
@@ -174,7 +185,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
 
         {/* Rodapé Fixo */}
         <SheetFooter className="border-t border-solid border-secondary px-5 py-6">
-          <div className="flex w-full items-center gap-3">
+          <div className="flex w-full flex-col items-center gap-3 sm:flex-row">
             <SheetClose asChild>
               <Button variant="outline" className="w-full">
                 Voltar

@@ -2,49 +2,75 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer base {
   :root {
-    --background: 0 0% 8%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 0% 8%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 8%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 163 94% 42%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 228 6% 16%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 228 6% 16%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 228 6% 16%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 228 6% 16%;
-    --input: 228 6% 16%;
-    --ring: 212.7 26.8% 83.9%;
-
-    --radius: 0.5rem;
+    --background: 240 3.571% 10.98%;
+    --foreground: 40 20% 91.176%;
+    --card: 240 2.703% 14.51%;
+    --card-foreground: 40 20% 91.176%;
+    --popover: 240 2.703% 14.51%;
+    --popover-foreground: 40 20% 91.176%;
+    --primary: 7.55 62.656% 47.255%;
+    --primary-foreground: 40 20% 91.176%;
+    --secondary: 240 2.703% 14.51%;
+    --secondary-foreground: 40 20% 91.176%;
+    --muted: 240 2.703% 14.51%;
+    --muted-foreground: 36 4.098% 52.157%;
+    --accent: 240 2.703% 14.51%;
+    --accent-foreground: 40 20% 91.176%;
+    --destructive: 7.55 62.656% 47.255%;
+    --destructive-foreground: 40 20% 91.176%;
+    --border: 36 4.098% 52.157% / 0.28;
+    --input: 240 2.703% 14.51%;
+    --ring: 7.55 62.656% 47.255%;
+    --radius: 0.25rem;
   }
-}
-
-@layer base {
   * {
     @apply border-border antialiased;
   }
   html {
-    @apply h-full;
+    @apply min-h-full;
   }
   body {
-    @apply h-full bg-background text-foreground;
+    @apply min-h-screen bg-background text-foreground;
+  }
+  :focus-visible {
+    outline: 2px solid hsl(var(--foreground));
+    outline-offset: 4px;
+  }
+  ::selection {
+    background: hsl(var(--foreground));
+    color: hsl(var(--background));
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  /* Warm gray passes AA on ink; raised surfaces need a lighter text tone. */
+  :is(.bg-card, .bg-secondary, .bg-popover, .bg-muted) .text-muted-foreground,
+  .bg-card.text-muted-foreground {
+    color: hsl(var(--foreground) / 0.75);
+  }
+}
+@layer components {
+  .studio-title {
+    @apply text-4xl font-black leading-none tracking-tight sm:text-6xl;
+  }
+  .studio-section {
+    @apply mt-10 border-t pt-6;
+  }
+  .studio-shell {
+    @apply mx-auto w-full max-w-6xl px-5 py-8 sm:px-8 sm:py-12;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

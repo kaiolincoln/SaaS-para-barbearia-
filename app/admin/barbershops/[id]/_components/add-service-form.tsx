@@ -57,7 +57,7 @@ export const AddServiceForm = ({
         <Label htmlFor="name">Nome do Serviço</Label>
         <Input id="name" name="name" type="text" />
         {state.fieldErrors?.name && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.name[0]}
           </p>
         )}
@@ -67,7 +67,7 @@ export const AddServiceForm = ({
         <Label htmlFor="description">Descrição</Label>
         <Textarea id="description" name="description" />
         {state.fieldErrors?.description && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.description[0]}
           </p>
         )}
@@ -77,7 +77,7 @@ export const AddServiceForm = ({
         <Label htmlFor="price">Preço</Label>
         <Input id="price" name="price" type="number" step="0.01" />
         {state.fieldErrors?.price && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.price[0]}
           </p>
         )}
@@ -96,7 +96,7 @@ export const AddServiceForm = ({
           required
         />
         {state.fieldErrors?.durationMinutes && (
-          <p className="text-xs text-red-500">
+          <p className="text-xs text-foreground">
             {state.fieldErrors.durationMinutes[0]}
           </p>
         )}
@@ -106,7 +106,7 @@ export const AddServiceForm = ({
         <Label htmlFor="imageUrl">URL da Imagem (Opcional)</Label>
         <Input id="imageUrl" name="imageUrl" type="url" />
         {state.fieldErrors?.imageUrl && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.imageUrl[0]}
           </p>
         )}
@@ -130,13 +130,13 @@ export const AddServiceForm = ({
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               Nenhum profissional cadastrado.
             </p>
           )}
         </div>
         {state.fieldErrors?.professionalIds && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.professionalIds[0]}
           </p>
         )}

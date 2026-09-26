@@ -15,7 +15,7 @@ export default function ReviewForm({ bookingId }: { bookingId: string }) {
   if (sent) return <p className="my-3 text-sm">Avaliação enviada. Obrigado!</p>
   return (
     <form
-      className="my-4 space-y-3 rounded-lg border p-4"
+      className="my-4 space-y-3 rounded-md border p-4"
       onSubmit={async (event) => {
         event.preventDefault()
         const data = new FormData(event.currentTarget)

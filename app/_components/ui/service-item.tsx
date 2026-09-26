@@ -179,19 +179,21 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
               alt={service.name}
               src={service.imageUrl || ""}
               fill
-              className="rounded-lg object-cover"
+              className="rounded-md object-cover"
             />
           </div>
           <div className="flex flex-1 flex-col">
             <div className="flex-1">
               <h3 className="text-sm font-semibold">{service.name}</h3>
-              <p className="text-sm text-gray-400">{service.description}</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-muted-foreground">
+                {service.description}
+              </p>
+              <p className="text-sm text-muted-foreground">
                 {service.durationMinutes} minutos
               </p>
             </div>
             <div className="mt-2 flex items-center justify-between">
-              <p className="text-sm font-bold text-primary">
+              <p className="text-sm font-bold text-foreground">
                 {Intl.NumberFormat("pt-BR", {
                   style: "currency",
                   currency: "BRL",
@@ -253,7 +255,7 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
                               variant={
                                 selectedTime === time ? "default" : "outline"
                               }
-                              className="rounded-full"
+                              className="rounded-md"
                               onClick={() => {
                                 setSelectedTime(time)
                                 setSelectedProfessional(undefined)
@@ -263,7 +265,7 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
                             </Button>
                           ))
                         ) : (
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted-foreground">
                             Não há horários disponíveis para este dia.
                           </p>
                         )}
@@ -292,13 +294,13 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
                                   alt={prof.name}
                                   width={32}
                                   height={32}
-                                  className="rounded-full"
+                                  className="rounded-md"
                                 />
                                 <span>{prof.name}</span>
                               </Button>
                             ))
                           ) : (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-muted-foreground">
                               Nenhum profissional disponível para este horário.
                             </p>
                           )}

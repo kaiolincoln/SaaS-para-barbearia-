@@ -1,6 +1,5 @@
 // CAMINHO: app/_components/ui/header.tsx
 
-import Image from "next/image"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { Button } from "@/components/ui/button"
@@ -28,7 +27,9 @@ const Header = async () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-5">
         {/* LOGO */}
         <Link href="/">
-          <Image src="/logo.png" alt="FSW Barber" height={32} width={120} />
+          <span className="text-xl font-black tracking-tighter">
+            FSW BARBER
+          </span>
         </Link>
 
         <div className="flex items-center gap-3">
@@ -45,7 +46,7 @@ const Header = async () => {
           {/* MENU HAMBÚRGUER */}
           <Sheet>
             <SheetTrigger asChild>
-              <Button variant="outline" size="icon">
+              <Button variant="ghost" size="icon" aria-label="Abrir menu">
                 <MenuIcon size={16} />
               </Button>
             </SheetTrigger>

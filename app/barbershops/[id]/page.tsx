@@ -60,15 +60,15 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
     <div>
       <BarbershopInfo barbershop={ratedShop} />
 
-      <section className="space-y-3 p-5">
+      <section className="studio-shell space-y-4">
         <h2 className="font-bold">Avaliações recentes</h2>
         {reviews.length === 0 && <p>Ainda não há avaliações.</p>}
         {reviews.map((review) => (
-          <article key={review.id} className="rounded-lg border p-3">
+          <article key={review.id} className="rounded-md border p-3">
             <p>
               {review.user.name} · {review.rating}/5
             </p>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               {formatBookingDate(review.createdAt, "dd/MM/yyyy")}
             </p>
             {review.comment && (
@@ -82,7 +82,7 @@ const BarbershopPage = async ({ params }: BarbershopPageProps) => {
           <p>Exibindo as 50 avaliações mais recentes.</p>
         )}
       </section>
-      <div className="flex flex-col gap-4 px-5 py-6">
+      <div className="studio-shell grid gap-4 lg:grid-cols-2">
         {barbershop.services.map((service) => (
           <ServiceItem
             key={service.id}

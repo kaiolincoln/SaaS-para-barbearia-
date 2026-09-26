@@ -68,7 +68,7 @@ export const ProfessionalListItem = ({
           alt={professional.name}
           width={40}
           height={40}
-          className="rounded-full object-cover"
+          className="rounded-md object-cover"
         />
         <span className="font-semibold">{professional.name}</span>
       </div>

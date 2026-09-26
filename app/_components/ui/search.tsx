@@ -8,7 +8,13 @@ import { zodResolver } from "@hookform/resolvers/zod"
 
 import { z } from "zod"
 import { useForm } from "react-hook-form"
-import { Form, FormControl, FormField, FormItem, FormMessage } from "@/components/ui/form"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form"
 
 const formSchema = z.object({
   title: z.string().trim().min(1, {
@@ -39,6 +45,7 @@ const Search = () => {
             <FormItem className="w-full">
               <FormControl>
                 <Input
+                  aria-label="Buscar barbearia"
                   placeholder="Faça sua busca..."
                   {...field}
                   className="w-full"
@@ -48,7 +55,7 @@ const Search = () => {
             </FormItem>
           )}
         />
-        <Button type="submit">
+        <Button type="submit" aria-label="Buscar">
           <SearchIcon />
         </Button>
       </form>

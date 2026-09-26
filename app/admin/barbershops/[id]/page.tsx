@@ -77,28 +77,30 @@ const BarbershopDetailsPage = async ({
         </Link>
       </Button>
 
-      <h1 className="text-2xl font-bold">{barbershop.name} - Gerenciamento</h1>
-      <p className="mb-6 text-gray-400">
+      <h1 className="mb-6 text-3xl font-black tracking-tight sm:text-5xl">
+        {barbershop.name} - Gerenciamento
+      </h1>
+      <p className="mb-6 text-muted-foreground">
         Aqui você pode gerenciar os serviços e informações da sua barbearia.
       </p>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-lg border p-4">
-          <p className="text-sm text-gray-400">Faturamento (Futuro)</p>
-          <p className="text-2xl font-bold">
+        <div className="rounded-md border p-4">
+          <p className="text-sm text-muted-foreground">Faturamento (Futuro)</p>
+          <p className="text-2xl font-medium">
             {Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
             }).format(totalRevenue)}
           </p>
         </div>
-        <div className="rounded-lg border p-4">
-          <p className="text-sm text-gray-400">Agendamentos Futuros</p>
-          <p className="text-2xl font-bold">{futureBookings.length}</p>
+        <div className="rounded-md border p-4">
+          <p className="text-sm text-muted-foreground">Agendamentos Futuros</p>
+          <p className="text-2xl font-medium">{futureBookings.length}</p>
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border p-4">
+      <div className="mt-6 rounded-md border p-4">
         <h2 className="mb-4 text-lg font-semibold">
           Horários de Funcionamento
         </h2>
@@ -115,7 +117,7 @@ const BarbershopDetailsPage = async ({
             barbershopId={barbershop.id}
           />
 
-          <div className="rounded-lg border p-4">
+          <div className="rounded-md border p-4">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">Serviços Cadastrados</h2>
               <AddServiceSheet
@@ -136,7 +138,7 @@ const BarbershopDetailsPage = async ({
         </div>
 
         <div className="flex-1">
-          <div className="rounded-lg border p-4">
+          <div className="rounded-md border p-4">
             <h2 className="mb-4 text-lg font-semibold">
               Agendamentos e histórico
             </h2>
@@ -148,7 +150,9 @@ const BarbershopDetailsPage = async ({
                 >
                   <div className="flex flex-col">
                     <p className="font-semibold">{booking.service.name}</p>
-                    <p className="text-sm text-gray-400">{booking.user.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {booking.user.name}
+                    </p>
                     <Badge variant="secondary">
                       {bookingStatusLabels[booking.status]}
                     </Badge>

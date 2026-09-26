@@ -2,7 +2,7 @@
 
 import { getServerSession } from "next-auth"
 import { redirect } from "next/navigation"
-import Image from "next/image"
+import DuotonePhoto from "@/_components/ui/duotone-photo"
 import Link from "next/link"
 import { db } from "@/_lib/prisma"
 import { authOptions } from "@/_lib/auth"
@@ -23,8 +23,12 @@ const AdminPage = async () => {
 
   return (
     <div className="p-5 lg:p-10">
-      <h1 className="text-2xl font-bold">Dashboard</h1>
-      <p className="text-gray-400">Bem-vindo de volta, {session.user.name}!</p>
+      <h1 className="mb-6 text-3xl font-black tracking-tight sm:text-5xl">
+        Dashboard
+      </h1>
+      <p className="text-muted-foreground">
+        Bem-vindo de volta, {session.user.name}!
+      </p>
 
       {/* 4. Verifica se o usuário é dono de alguma barbearia */}
       {barbershops.length > 0 ? (
@@ -35,10 +39,10 @@ const AdminPage = async () => {
             {barbershops.map((barbershop) => (
               <div
                 key={barbershop.id}
-                className="overflow-hidden rounded-lg border"
+                className="overflow-hidden rounded-md border"
               >
                 <div className="relative h-40 w-full">
-                  <Image
+                  <DuotonePhoto
                     src={barbershop.imageUrl}
                     alt={barbershop.name}
                     fill
@@ -47,7 +51,7 @@ const AdminPage = async () => {
                 </div>
                 <div className="p-3">
                   <h3 className="font-bold">{barbershop.name}</h3>
-                  <div className="mt-1 flex items-center gap-1 text-xs text-gray-400">
+                  <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                     <MapPinIcon size={14} />
                     {barbershop.address}
                   </div>
@@ -68,7 +72,7 @@ const AdminPage = async () => {
           <h2 className="text-xl font-semibold">
             Nenhuma barbearia encontrada.
           </h2>
-          <p className="mt-2 text-gray-400">
+          <p className="mt-2 text-muted-foreground">
             Você ainda não cadastrou nenhuma barbearia.
           </p>
           <Button className="mt-4">Cadastrar minha barbearia</Button>

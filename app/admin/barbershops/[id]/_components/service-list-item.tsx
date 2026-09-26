@@ -62,7 +62,7 @@ export const ServiceListItem = ({
     <div className="flex items-center justify-between rounded-md border bg-secondary p-3">
       <div>
         <p className="font-semibold">{service.name}</p>
-        <p className="text-sm text-gray-400">
+        <p className="text-sm text-muted-foreground">
           {Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL",

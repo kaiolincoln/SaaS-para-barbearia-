@@ -23,9 +23,9 @@ const Home = async () => {
     <div>
       {/* header */}
       <Header />
-      <div className="p-5">
+      <div className="studio-shell">
         {/* TEXTO */}
-        <h2 className="text-xl font-bold">
+        <h2 className="studio-title mb-5 max-w-3xl">
           Olá, {session?.user ? session.user.name : "bem vindo"}!
         </h2>
         <p>
@@ -67,19 +67,9 @@ const Home = async () => {
           ))}
         </div>
 
-        {/* IMAGEM */}
-        <div className="relative mt-6 h-[150px] w-full">
-          <Image
-            alt="Agende nos melhores com FSW Barber"
-            src="/banner-01.png"
-            fill
-            className="rounded-xl object-cover"
-          />
-        </div>
-
         {confirmedBookings.length > 0 && (
           <>
-            <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
+            <h2 className="studio-section mb-5 text-xl font-medium text-foreground">
               Agendamentos
             </h2>
 
@@ -95,19 +85,19 @@ const Home = async () => {
           </>
         )}
 
-        <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
+        <h2 className="studio-section mb-5 text-xl font-medium text-foreground">
           Recomendados
         </h2>
-        <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
+        <div className="grid auto-cols-[80%] grid-flow-col gap-6 overflow-x-auto pb-4 sm:auto-cols-[40%] lg:auto-cols-[30%]">
           {barbershops.map((barbershop) => (
             <BarbershopItem key={barbershop.id} barbershop={barbershop} />
           ))}
         </div>
 
-        <h2 className="mb-3 mt-6 text-xs font-bold uppercase text-gray-400">
+        <h2 className="studio-section mb-5 text-xl font-medium text-foreground">
           Populares
         </h2>
-        <div className="flex gap-4 overflow-auto [&::-webkit-scrollbar]:hidden">
+        <div className="grid auto-cols-[80%] grid-flow-col gap-6 overflow-x-auto pb-4 sm:auto-cols-[40%] lg:auto-cols-[30%]">
           {popularBarbershops.map((barbershop) => (
             <BarbershopItem key={barbershop.id} barbershop={barbershop} />
           ))}

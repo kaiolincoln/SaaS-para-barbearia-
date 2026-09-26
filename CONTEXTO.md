@@ -4,7 +4,7 @@ Documento de referência para manutenção e futuras tarefas de desenvolvimento.
 
 ## 1. Produto e escopo atual
 
-Aplicação de descoberta de barbearias e agendamento de serviços, iniciada no bootcamp Full Stack Club e ampliada com profissionais, expediente e administração. Interface em português brasileiro, valores em reais e tema escuro com destaque verde.
+Aplicação de descoberta de barbearias e agendamento de serviços, iniciada no bootcamp Full Stack Club e ampliada com profissionais, expediente e administração. Interface em português brasileiro, valores em reais e identidade escura de estúdio: ink (#1B1B1D), bone (#EDEAE4), superfície (#242426), cinza quente (#8A8680) e tattoo-red (#C4402D) reservado a interação.
 
 O cliente pesquisa uma barbearia, escolhe serviço, dia, horário e profissional, confirma a reserva e consulta ou cancela seus agendamentos. O proprietário tem um painel com serviços, profissionais, expediente e histórico de reservas; finaliza manualmente atendimentos confirmados após o término.
 
@@ -39,7 +39,7 @@ Versões declaradas em `package.json` (os intervalos não representam necessaria
 | `public/`                                 | Logo, banner, mapa e ícones                                                         |
 | `app/generated/prisma/`                   | Artefatos gerados antigos; a aplicação importa `@prisma/client`                     |
 
-O alias `@/*` aponta para `app/*`, não para a raiz. O layout carrega Inter via `next/font/google`, CSS global, AuthProvider, Footer e Sonner. O tema é fixado por `className="dark"`; as cores estão em `app/globals.css`.
+O alias `@/*` aponta para `app/*`, não para a raiz. O layout carrega Archivo via `next/font/google`, CSS global, AuthProvider, Footer e Sonner. O tema é fixado por `className="dark"`; as cores estão em `app/globals.css`.
 
 ## 3. Rotas
 
@@ -209,3 +209,14 @@ Implementados itens 4.2–4.4. Notificações e recuperação de senha ficaram p
 As duas novas migrations foram geradas e testadas em PostgreSQL local descartável. Colunas adicionadas a tabelas existentes possuem defaults; os vínculos obrigatórios da nova tabela Review são fornecidos pela action, sem inventar IDs/defaults que violariam integridade. O formulário aparece na reserva COMPLETED não avaliada; detalhe da barbearia lista até 50 avaliações recentes e a contagem total. Somente nome, nota, comentário e data são públicos.
 
 Consulte `docs/VALIDACAO-ONDA-4.md` para verificações e implantação. Nenhuma migration desta etapa foi aplicada ao Neon. Antes de executar esta versão contra esse banco, reconciliar o histórico/schema (incluindo image da Onda 3) e aplicar as migrations pendentes com `prisma migrate deploy`; não usar reset nem seed.
+
+
+## 13. Design system estúdio
+
+Redesign exclusivamente visual na branch `feat/design-system-estudio`, baseado na Onda 4. Sem mudanças de autorização, agenda, dados ou migrations.
+
+Tokens shadcn preservados, raio 4 px, cards sem sombras e hairlines discretas. Archivo é a família de produção; títulos em peso Black, corpo regular/médio. Caixa-alta apenas no wordmark. A comparação manual Archivo/Space Grotesk está em `docs/design/specimen.html`; a captura automática foi bloqueada pela política do ambiente.
+
+`DuotonePhoto` centraliza o filtro SVG sRGB (ink → bone) para capas públicas, miniaturas de barbearia em reservas e capas administrativas. Retratos profissionais permanecem coloridos. Home, busca, detalhe e reservas usam hierarquia e espaçamento comuns; painel mantém os fluxos existentes.
+
+Contraste: bone sobre ink com contraste superior a 14:1; warm-gray/ink 4,75:1. Warm-gray/surface 4,28:1 exige texto mais claro nas superfícies. Bone/vermelho 4,25:1: botões primários usam 20 px em negrito, atendendo ao limiar de texto grande (3:1). Foco visível e prefers-reduced-motion tratados globalmente. Validar responsividade, filtro SVG e navegação por teclado em navegador antes do aceite visual final; build não substitui essa revisão.

@@ -64,7 +64,7 @@ export const EditServiceForm = ({
         <Label htmlFor="name">Nome do Serviço</Label>
         <Input id="name" name="name" type="text" defaultValue={service.name} />
         {state.fieldErrors?.name && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.name[0]}
           </p>
         )}
@@ -77,7 +77,7 @@ export const EditServiceForm = ({
           defaultValue={service.description}
         />
         {state.fieldErrors?.description && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.description[0]}
           </p>
         )}
@@ -92,7 +92,7 @@ export const EditServiceForm = ({
           defaultValue={Number(service.price)}
         />
         {state.fieldErrors?.price && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.price[0]}
           </p>
         )}
@@ -110,7 +110,7 @@ export const EditServiceForm = ({
           required
         />
         {state.fieldErrors?.durationMinutes && (
-          <p className="text-xs text-red-500">
+          <p className="text-xs text-foreground">
             {state.fieldErrors.durationMinutes[0]}
           </p>
         )}
@@ -125,7 +125,7 @@ export const EditServiceForm = ({
           defaultValue={service.imageUrl}
         />
         {state.fieldErrors?.imageUrl && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.imageUrl[0]}
           </p>
         )}
@@ -149,13 +149,13 @@ export const EditServiceForm = ({
               </div>
             ))
           ) : (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground">
               Nenhum profissional cadastrado.
             </p>
           )}
         </div>
         {state.fieldErrors?.professionalIds && (
-          <p className="mt-1 text-xs text-red-500">
+          <p className="mt-1 text-xs text-foreground">
             {state.fieldErrors.professionalIds[0]}
           </p>
         )}

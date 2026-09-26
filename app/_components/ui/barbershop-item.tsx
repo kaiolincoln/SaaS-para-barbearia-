@@ -1,7 +1,7 @@
 import type { RatingSummary } from "@/_data/reviews"
 import { Barbershop } from "@prisma/client"
 import { Card, CardContent } from "@/components/ui/card"
-import Image from "next/image"
+import DuotonePhoto from "./duotone-photo"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { StarIcon } from "lucide-react"
@@ -13,14 +13,15 @@ interface BarbershopItemProps {
 
 const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
   return (
-    <Card className="min-w-[167px] rounded-2xl">
+    <Card className="w-full min-w-[220px] border-0 bg-transparent shadow-none">
       <CardContent className="p-0 px-1 pt-1">
         {/* IMAGEM */}
-        <div className="relative h-[159px] w-full">
-          <Image
+        <div className="relative h-[240px] w-full">
+          <DuotonePhoto
             alt={barbershop.name}
             fill
-            className="rounded-2xl object-cover"
+            sizes="(max-width: 640px) 80vw, 320px"
+            className="rounded-md object-cover"
             src={barbershop.imageUrl}
           />
 
@@ -28,7 +29,7 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
             className="absolute left-2 top-2 space-x-1"
             variant="secondary"
           >
-            <StarIcon size={12} className="fill-primary text-primary" />
+            <StarIcon size={12} className="fill-foreground text-foreground" />
             <p className="text-xs font-semibold">
               {barbershop.averageRating?.toFixed(1).replace(".", ",") ??
                 "Sem avaliações"}{" "}
@@ -40,7 +41,9 @@ const BarbershopItem = ({ barbershop }: BarbershopItemProps) => {
         {/* TEXTO */}
         <div className="px-1 py-3">
           <h3 className="truncate font-semibold">{barbershop.name}</h3>
-          <p className="truncate text-sm text-gray-400">{barbershop.address}</p>
+          <p className="truncate text-sm text-muted-foreground">
+            {barbershop.address}
+          </p>
           <Button variant="secondary" className="mt-3 w-full" asChild>
             <Link href={`/barbershops/${barbershop.id}`}>Reservar</Link>
           </Button>
