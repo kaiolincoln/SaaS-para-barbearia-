@@ -1,21 +1,72 @@
-type WorkingHours = { dayOfWeek: number; isOpen: boolean; startTime: string; endTime: string };
+/**
+ * Fonte única da agenda: America/Sao_Paulo, independentemente do fuso do
+ * navegador ou Node. Dias civis trafegam como YYYY-MM-DD; reservas são instantes.
+ * O Date local do calendário representa somente o rótulo clicado, não um instante.
+ * Conversões usam a base IANA via date-fns-tz; não fixar manualmente UTC-3.
+ */
+import { formatInTimeZone, fromZonedTime } from "date-fns-tz"
+import { ptBR } from "date-fns/locale"
 
-export function validateBookingTime(date: Date, hours: WorkingHours[], now = new Date()) {
-  if (!(date instanceof Date) || !Number.isFinite(date.getTime()) || date <= now) {
-    throw new Error('Escolha uma data futura válida.');
+export const BOOKING_TIME_ZONE = "America/Sao_Paulo"
+export const SLOT_MINUTES = 30
+export type Schedule = { dayOfWeek: number; isOpen: boolean; startTime: string; endTime: string }
+export type OccupiedSlot = { professionalId: string; date: Date }
+
+export function formatBookingDate(date: Date | string, pattern: string) {
+  return formatInTimeZone(date, BOOKING_TIME_ZONE, pattern, { locale: ptBR })
+}
+export function bookingDay(date = new Date()) {
+  return formatBookingDate(date, "yyyy-MM-dd")
+}
+export function calendarDay(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+}
+export function calendarDate(day: string) {
+  assertDay(day)
+  const [year, month, date] = day.split("-").map(Number)
+  return new Date(year, month - 1, date, 12)
+}
+function assertDay(day: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error("Dia inválido.")
+  const parsed = new Date(`${day}T12:00:00Z`)
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== day) throw new Error("Dia inválido.")
+}
+export function bookingInstant(day: string, time: string) {
+  assertDay(day)
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new Error("Horário inválido.")
+  const date = fromZonedTime(`${day}T${time}:00`, BOOKING_TIME_ZONE)
+  if (formatBookingDate(date, "yyyy-MM-dd HH:mm") !== `${day} ${time}`) throw new Error("Horário inexistente neste fuso.")
+  return date
+}
+export function bookingDayBounds(day: string) {
+  assertDay(day)
+  const next = new Date(`${day}T12:00:00Z`)
+  next.setUTCDate(next.getUTCDate() + 1)
+  return { gte: bookingInstant(day, "00:00"), lt: bookingInstant(next.toISOString().slice(0, 10), "00:00") }
+}
+export function bookingWeekday(day: string) {
+  assertDay(day)
+  return new Date(`${day}T12:00:00Z`).getUTCDay()
+}
+const toMinutes = (time: string) => { const [h, m] = time.split(":").map(Number); return h * 60 + m }
+export function validateBookingTime(date: Date, hours: Schedule[], now = new Date()) {
+  if (!(date instanceof Date) || !Number.isFinite(date.getTime()) || date <= now) throw new Error("Escolha uma data futura válida.")
+  const schedule = hours.find(item => item.dayOfWeek === bookingWeekday(bookingDay(date)))
+  const minutes = toMinutes(formatBookingDate(date, "HH:mm"))
+  if (!schedule?.isOpen || minutes < toMinutes(schedule.startTime) || minutes + SLOT_MINUTES > toMinutes(schedule.endTime)) throw new Error("Horário fora do funcionamento da barbearia.")
+  if (minutes % SLOT_MINUTES !== 0 || date.getUTCSeconds() !== 0 || date.getUTCMilliseconds() !== 0) throw new Error("Selecione um horário em intervalos de 30 minutos.")
+}
+export function freeProfessionals<T extends { id: string }>(date: Date, professionals: T[], bookings: OccupiedSlot[]) {
+  return professionals.filter(professional => !bookings.some(booking => booking.professionalId === professional.id && Math.abs(new Date(booking.date).getTime() - date.getTime()) < SLOT_MINUTES * 60_000))
+}
+export function availableBookingTimes(day: string, hours: Schedule[], professionals: { id: string }[], bookings: OccupiedSlot[], now = new Date()) {
+  const schedule = hours.find(item => item.dayOfWeek === bookingWeekday(day))
+  if (!schedule?.isOpen) return []
+  const times: string[] = []
+  for (let minutes = Math.ceil(toMinutes(schedule.startTime) / SLOT_MINUTES) * SLOT_MINUTES; minutes + SLOT_MINUTES <= toMinutes(schedule.endTime); minutes += SLOT_MINUTES) {
+    const time = `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`
+    const date = bookingInstant(day, time)
+    if (date > now && freeProfessionals(date, professionals, bookings).length) times.push(time)
   }
-  const parts = new Intl.DateTimeFormat('en-GB', {
-    timeZone: 'America/Sao_Paulo', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
-  }).formatToParts(date);
-  const part = (type: string) => parts.find(item => item.type === type)!.value;
-  const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(part('weekday'));
-  const schedule = hours.find(item => item.dayOfWeek === day);
-  const minutes = Number(part('hour')) * 60 + Number(part('minute'));
-  const toMinutes = (value: string) => { const [h, m] = value.split(':').map(Number); return h * 60 + m; };
-  if (!schedule?.isOpen || minutes < toMinutes(schedule.startTime) || minutes + 30 > toMinutes(schedule.endTime)) {
-    throw new Error('Horário fora do funcionamento da barbearia.');
-  }
-  if (minutes % 30 !== 0 || date.getUTCSeconds() !== 0 || date.getUTCMilliseconds() !== 0) {
-    throw new Error('Selecione um horário em intervalos de 30 minutos.');
-  }
+  return times
 }

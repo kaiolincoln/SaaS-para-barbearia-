@@ -1,6 +1,5 @@
 import { BarbershopService, Professional } from "@prisma/client";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatBookingDate } from "@/_lib/booking-time";
 
 interface BookingSummaryProps {
   service: BarbershopService;
@@ -19,11 +18,11 @@ const BookingSummary = ({ service, selectedDate, professional }: BookingSummaryP
       </div>
       <div className="flex justify-between">
         <p className="text-sm text-gray-400">Data</p>
-        <p className="text-sm">{format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}</p>
+        <p className="text-sm">{formatBookingDate(selectedDate, "dd 'de' MMMM")}</p>
       </div>
       <div className="flex justify-between">
         <p className="text-sm text-gray-400">Horário</p>
-        <p className="text-sm">{format(selectedDate, "HH:mm")}</p>
+        <p className="text-sm">{formatBookingDate(selectedDate, "HH:mm")}</p>
       </div>
       {professional && ( 
         <div className="flex justify-between border-t pt-3 mt-3">

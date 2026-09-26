@@ -88,7 +88,13 @@ As migrations adicionam senha, telefone, proprietário, expediente, profissional
 
 `validateBookingTime` exige data válida e futura, expediente aberto em `America/Sao_Paulo`, início dentro do expediente, duração implícita de 30 minutos, minutos múltiplos de 30 e segundos/milissegundos zerados. Dia sem configuração é indisponível. Não há suporte a expediente que atravessa a meia-noite, pausas, feriados ou agenda individual do profissional.
 
-As consultas diárias usam `startOfDay/endOfDay` no fuso do servidor; a interface usa o fuso do navegador. Isso difere da validação explícita em São Paulo. A disponibilidade exibida é uma fotografia e pode mudar até a confirmação; a verificação final ocorre no servidor. A interface mostra erro genérico e não exibe a mensagem detalhada da action.
+### Onda 2 — expediente e fuso (implementada)
+
+`booking-time.ts` centraliza America/Sao_Paulo usando date-fns-tz 3. Dias civis são strings YYYY-MM-DD, convertidos em instantes UTC somente por `bookingInstant`. Consultas usam intervalo semiaberto [meia-noite de São Paulo, meia-noite seguinte). O calendário usa Date local apenas para seu rótulo de dia; nunca envia esse Date como instante. Geração de horários, conflitos e formatação de reservas/home/painel usam os helpers compartilhados. Testes rodaram tanto com TZ=UTC quanto TZ=Asia/Tokyo: 67 aprovados em cada execução.
+
+A interface espera a disponibilidade do dia corrente, descarta respostas atrasadas e bloqueia confirmação com seleção indisponível. O servidor continua sendo a autoridade final. Erros de reserva são mostrados ao usuário e provocam nova consulta. A criação restringe explicitamente os campos gravados e confere também a barbearia do profissional, protegendo contra vínculos antigos inconsistentes.
+
+Expediente fechado aceita ausência de horários: preserva os existentes em update e usa 09:00/18:00 somente ao criar registro fechado. Aberto exige HH:mm, início anterior ao fim, dia inteiro de 0 a 6. O formulário mantém inputs desabilitados quando fechado e obrigatórios quando aberto. Não há agenda noturna ou feriados.
 
 `getConfirmedBookings` e `getConcludedBookings` filtram pelo usuário da sessão, incluem serviço/barbearia e ordenam por data crescente. O profissional não é incluído nesses resumos. As páginas serializam reservas via JSON antes de enviá-las a `BookingItem`, embora seus tipos ainda descrevam Date/Decimal do Prisma.
 
@@ -121,7 +127,7 @@ Formulários de serviços e edição de profissional usam `useFormState/useFormS
 
 O painel reúne reservas futuras dos serviços e soma seus preços. Cada serviço tem reservas ordenadas, mas o `flatMap` final não faz uma ordenação global. Sheets permitem adicionar/editar serviços e profissionais, e dialogs confirmam exclusões.
 
-O formulário de expediente salva um dia por vez. Quando `isOpen` é falso, os inputs de horário ficam desabilitados e não entram no FormData, enquanto a action continua exigindo strings HH:mm. Isso impede salvar o fechamento do dia pelo fluxo atual. A validação também não exige início anterior ao fim nem dia inteiro em `dayOfWeek`.
+O formulário de expediente salva um dia por vez com validação condicional descrita na Onda 2.
 
 Imagens remotas só têm `utfs.io` configurado em `next.config.mjs`, embora formulários aceitem qualquer URL válida. Há fallback para `/user-placeholder.png`, arquivo ausente de `public/`, e seleção de profissional pode passar uma URL vazia. O detalhe da barbearia envolve `SidebarSheet` em outro `SheetContent`, embora o próprio sidebar já renderize esse conteúdo; revisar a composição visual.
 
@@ -168,7 +174,7 @@ Configurações a reconciliar: coexistem `.eslintrc.json` e `eslint.config.mjs`;
 
 ## 10. Pendências prioritárias encontradas
 
-As falhas de autorização, cadastro e privacidade da auditoria inicial foram tratadas na Onda 1. Permanecem para as ondas seguintes: fechamento de dia, fuso único, migrations, decisão Google e configuração de lint. Fora do escopo: imagens ausentes, composição de sheets, paginação, avaliações e features de produto.
+As falhas de autorização, cadastro e privacidade da auditoria inicial foram tratadas na Onda 1. Agenda e fuso foram tratados na Onda 2. Permanecem para a Onda 3: migrations, decisão Google e configuração de lint. Fora do escopo: imagens ausentes, composição de sheets, paginação, avaliações e features de produto.
 
 ## 11. Guia para próximas tarefas
 

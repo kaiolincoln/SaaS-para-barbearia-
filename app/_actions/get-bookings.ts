@@ -1,24 +1,21 @@
 "use server"
 
-import { endOfDay, startOfDay } from "date-fns"
+import { bookingDayBounds } from "@/_lib/booking-time"
 import { db } from "@/_lib/prisma" 
 
 interface GetBookingsProps {
   serviceId: string 
-  date: Date
+  day: string
 }
 
 
-export const getBookings = async ({ date, serviceId }: GetBookingsProps) => {
+export const getBookings = async ({ day, serviceId }: GetBookingsProps) => {
   const bookings = await db.booking.findMany({
     select: { professionalId: true, date: true },
     where: {
       
       serviceId: serviceId, 
-      date: {
-        lte: endOfDay(date),
-        gte: startOfDay(date),
-      },
+      date: bookingDayBounds(day),
     },
   })
 

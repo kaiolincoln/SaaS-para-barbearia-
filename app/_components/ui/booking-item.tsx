@@ -4,8 +4,8 @@ import { Prisma } from "@prisma/client";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { format, isFuture } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { isFuture } from "date-fns";
+import { formatBookingDate } from "@/_lib/booking-time";
 import {
   Sheet,
   SheetClose,
@@ -94,13 +94,13 @@ const BookingItem = ({ booking }: BookingItemProps) => {
             </div>
             <div className="flex flex-col items-center justify-center border-l-2 border-solid px-5">
               <p className="text-sm capitalize">
-                {format(booking.date, "MMMM", { locale: ptBR })}
+                {formatBookingDate(booking.date, "MMMM")}
               </p>
               <p className="text-2xl">
-                {format(booking.date, "dd", { locale: ptBR })}
+                {formatBookingDate(booking.date, "dd")}
               </p>
               <p className="text-sm">
-                {format(booking.date, "HH:mm", { locale: ptBR })}
+                {formatBookingDate(booking.date, "HH:mm")}
               </p>
             </div>
           </CardContent>

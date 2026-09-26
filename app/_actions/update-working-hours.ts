@@ -6,27 +6,25 @@ import { z } from "zod";
 import { db } from "@/_lib/prisma";
 
 
-const workingHoursSchema = z.object({
-  dayOfWeek: z.number().min(0).max(6),
-  isOpen: z.boolean(),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
-  barbershopId: z.string().uuid(),
-});
+const time = z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/)
+const base = { dayOfWeek: z.number().int().min(0).max(6), barbershopId: z.string().uuid() }
+const workingHoursSchema = z.discriminatedUnion("isOpen", [
+  z.object({ ...base, isOpen: z.literal(true), startTime: time, endTime: time }),
+  z.object({ ...base, isOpen: z.literal(false), startTime: time.optional(), endTime: time.optional() }),
+]).refine(data => !data.isOpen || data.startTime < data.endTime, { message: "Início deve ser anterior ao fim.", path: ["endTime"] })
 
 export const updateWorkingHours = async (formData: FormData) => {
   const rawData = {
-    dayOfWeek: Number(formData.get("dayOfWeek")),
-    isOpen: formData.get("isOpen") === "true",
-    startTime: formData.get("startTime") as string,
-    endTime: formData.get("endTime") as string,
+    dayOfWeek: formData.has("dayOfWeek") ? Number(formData.get("dayOfWeek")) : NaN,
+    isOpen: formData.get("isOpen") === "true" ? true : formData.get("isOpen") === "false" ? false : undefined,
+    startTime: formData.get("startTime") || undefined,
+    endTime: formData.get("endTime") || undefined,
     barbershopId: formData.get("barbershopId") as string,
   };
 
   const validatedFields = workingHoursSchema.safeParse(rawData);
 
   if (!validatedFields.success) {
-    console.error("Validation errors:", validatedFields.error.flatten());
     return {
       error: "Dados inválidos.",
       fieldErrors: validatedFields.error.flatten().fieldErrors,
@@ -53,8 +51,8 @@ export const updateWorkingHours = async (formData: FormData) => {
         barbershopId,
         dayOfWeek,
         isOpen,
-        startTime,
-        endTime,
+        startTime: startTime ?? "09:00",
+        endTime: endTime ?? "18:00",
       },
     });
 

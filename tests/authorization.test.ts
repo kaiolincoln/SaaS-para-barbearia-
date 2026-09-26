@@ -120,3 +120,22 @@ test("past bookings are removed inside the serializable professional deletion tr
   expect(m.deleteBookings).toHaveBeenCalledWith({ where: { professionalId: "professional", date: { lt: expect.any(Date) } } })
   expect(m.deleteBookings.mock.invocationCallOrder[0]).toBeLessThan(m.deleteProfessional.mock.invocationCallOrder[0])
 })
+
+test("dia fechado sem horários pode ser salvo preservando horários anteriores", async () => {
+  const data = form({ barbershopId: shopId, dayOfWeek: "1", isOpen: "false" })
+  expect(await updateWorkingHours(data)).toHaveProperty("success", true)
+  expect(m.hours).toHaveBeenCalledWith(expect.objectContaining({
+    update: { isOpen: false, startTime: undefined, endTime: undefined },
+    create: { barbershopId: shopId, dayOfWeek: 1, isOpen: false, startTime: "09:00", endTime: "18:00" },
+  }))
+})
+test.each([
+  { dayOfWeek: "1.5" }, { dayOfWeek: "7" }, { dayOfWeek: "-1" },
+  { startTime: "18:00", endTime: "09:00" }, { endTime: "09:00" },
+  { startTime: "" }, { endTime: "" }, { isOpen: "invalid" },
+])("expediente inválido não é salvo: %j", async change => {
+  const data = hoursForm()
+  Object.entries(change).forEach(([key, value]) => data.set(key, value))
+  expect(await updateWorkingHours(data)).toHaveProperty("error")
+  expect(m.hours).not.toHaveBeenCalled()
+})

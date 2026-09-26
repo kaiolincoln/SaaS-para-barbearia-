@@ -16,7 +16,7 @@ interface WorkingHoursFormProps {
 }
 
 // Componente para uma única linha do formulário (um dia da semana)
-const DayRow = ({ dayIndex, dayName, barbershopId, initialDayData }: any) => {
+const DayRow = ({ dayIndex, dayName, barbershopId, initialDayData }: { dayIndex: number; dayName: string; barbershopId: string; initialDayData?: WorkingHours }) => {
   const [isOpen, setIsOpen] = useState(initialDayData?.isOpen ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -34,7 +34,7 @@ const DayRow = ({ dayIndex, dayName, barbershopId, initialDayData }: any) => {
         throw new Error(result.error || "Falha ao salvar.");
       }
     } catch (error) {
-      toast.error(`Erro ao salvar horário de ${dayName}.`);
+      toast.error(error instanceof Error ? error.message : `Erro ao salvar horário de ${dayName}.`);
       console.error(error);
     } finally {
       setIsSubmitting(false);
@@ -71,6 +71,7 @@ const DayRow = ({ dayIndex, dayName, barbershopId, initialDayData }: any) => {
             type="time"
             defaultValue={initialDayData?.startTime ?? "09:00"}
             disabled={!isOpen}
+            required={isOpen}
             className="w-28"
           />
         </div>
@@ -82,6 +83,7 @@ const DayRow = ({ dayIndex, dayName, barbershopId, initialDayData }: any) => {
             type="time"
             defaultValue={initialDayData?.endTime ?? "18:00"}
             disabled={!isOpen}
+            required={isOpen}
             className="w-28"
           />
         </div>

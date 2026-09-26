@@ -1,8 +1,7 @@
 import { requireBarbershopAccess } from "@/_lib/authorize-barbershop";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { formatBookingDate } from "@/_lib/booking-time";
 import { ChevronLeftIcon } from "lucide-react";
 
 import { db } from "@/_lib/prisma";
@@ -149,12 +148,10 @@ const BarbershopDetailsPage = async ({
                   </div>
                   <div className="text-right">
                     <p className="text-sm">
-                      {format(new Date(booking.date), "dd 'de' MMMM", {
-                        locale: ptBR,
-                      })}
+                      {formatBookingDate(new Date(booking.date), "dd 'de' MMMM")}
                     </p>
                     <p className="text-sm font-bold">
-                      {format(new Date(booking.date), "HH:mm")}
+                      {formatBookingDate(new Date(booking.date), "HH:mm")}
                     </p>
                   </div>
                 </div>

@@ -9,8 +9,7 @@ import Search from "@/_components/ui/search"
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { authOptions } from "./_lib/auth"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
+import { formatBookingDate } from "@/_lib/booking-time"
 import { getConfirmedBookings } from "./_data/get-confirmed-bookings"
 
 const Home = async () => {
@@ -34,11 +33,11 @@ const Home = async () => {
         </h2>
         <p>
           <span className="capitalize">
-            {format(new Date(), "EEEE, dd", { locale: ptBR })}
+            {formatBookingDate(new Date(), "EEEE, dd")}
           </span>
           <span>&nbsp;de&nbsp;</span>
           <span className="capitalize">
-            {format(new Date(), "MMMM", { locale: ptBR })}
+            {formatBookingDate(new Date(), "MMMM")}
           </span>
         </p>
 

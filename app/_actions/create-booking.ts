@@ -23,7 +23,7 @@ export const createBooking = async (params: CreateBookingParams) => {
         include: { professionals: true, barbershop: { include: { workingHours: true } } },
       });
       if (!service) throw new Error("Serviço não encontrado.");
-      if (!service.professionals.some(professional => professional.id === params.professionalId)) {
+      if (!service.professionals.some(professional => professional.id === params.professionalId && professional.barbershopId === service.barbershopId)) {
         throw new Error("Profissional inválido para este serviço.");
       }
       validateBookingTime(params.date, service.barbershop.workingHours);
@@ -34,7 +34,7 @@ export const createBooking = async (params: CreateBookingParams) => {
         },
       });
       if (existing) throw new Error("Horário ocupado. Escolha outro horário.");
-      await transaction.booking.create({ data: { ...params, userId: session.user.id } });
+      await transaction.booking.create({ data: { serviceId: params.serviceId, professionalId: params.professionalId, date: params.date, userId: session.user.id } });
     }, { isolationLevel: 'Serializable' });
   } catch (error) {
     if (error && typeof error === 'object' && 'code' in error && error.code === 'P2034') {

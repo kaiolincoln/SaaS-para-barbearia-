@@ -1,6 +1,6 @@
 "use client";
 
-import { Barbershop, BarbershopService, Booking, Professional, WorkingHours } from "@prisma/client";
+import { Barbershop, BarbershopService, Professional, WorkingHours } from "@prisma/client";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,13 +10,12 @@ import {
   SheetFooter,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet";
 import { Calendar } from "@/components/ui/calendar";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ptBR } from "date-fns/locale";
 import { useEffect, useMemo, useState } from "react";
-import { format, isPast, isToday, set } from "date-fns";
+import { availableBookingTimes, bookingDay, bookingInstant, bookingWeekday, calendarDay, calendarDate, freeProfessionals, type OccupiedSlot } from "@/_lib/booking-time";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { createBooking } from "@/_actions/create-booking";
@@ -46,93 +45,31 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | undefined>(undefined);
-  const [dayBookings, setDayBookings] = useState<Pick<Booking, "professionalId" | "date">[]>([]);
-  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [availability, setAvailability] = useState<{ day: string; bookings: OccupiedSlot[] } | null>(null);
+  const day = selectedDay ? calendarDay(selectedDay) : undefined;
 
   useEffect(() => {
-    if (!selectedDay) return;
+    if (!day) return;
+    let active = true;
+    getDayBookings({ barbershopId: service.barbershop.id, day })
+      .then(bookings => { if (active) setAvailability({ day, bookings }); })
+      .catch(() => { if (active) { setAvailability(null); toast.error("Não foi possível consultar os horários. Selecione o dia novamente."); } });
+    return () => { active = false; };
+  }, [day, service.barbershop.id]);
 
-    const fetchBookings = async () => {
-      const bookings = await getDayBookings({
-        barbershopId: service.barbershop.id,
-        date: selectedDay,
-      });
-      setDayBookings(bookings);
-    };
-    fetchBookings();
-  }, [selectedDay, service.barbershop.id]);
-
-  useEffect(() => {
-    if (!selectedDay) {
-      setAvailableTimes([]);
-      return;
-    }
-
-    const workingHours = service.barbershop.workingHours.find(
-      (wh) => wh.dayOfWeek === selectedDay.getDay()
-    );
-
-    if (!workingHours || !workingHours.isOpen) {
-      setAvailableTimes([]);
-      return;
-    }
-
-    const toMinutes = (value: string) => { const [h, m] = value.split(':').map(Number); return h * 60 + m; };
-    const timeList: string[] = [];
-    for (let minutes = Math.ceil(toMinutes(workingHours.startTime) / 30) * 30; minutes + 30 <= toMinutes(workingHours.endTime); minutes += 30) {
-      timeList.push(String(Math.floor(minutes / 60)).padStart(2, '0') + ':' + String(minutes % 60).padStart(2, '0'));
-    }
-
-    const filteredTimes = timeList.filter((time) => {
-      const [hour, minute] = time.split(":").map(Number);
-      const timeDate = set(selectedDay, { hours: hour, minutes: minute, seconds: 0, milliseconds: 0 });
-
-      if (isPast(timeDate) && isToday(selectedDay)) return false;
-
-      const bookingsForTime = dayBookings.filter(
-        (booking) =>
-          booking.date.getHours() === hour &&
-          booking.date.getMinutes() === minute
-      );
-
-      return service.professionals.some(professional => !bookingsForTime.some(booking => booking.professionalId === professional.id));
-    });
-
-    setAvailableTimes(filteredTimes);
-  }, [selectedDay, dayBookings, service.barbershop.workingHours, service.professionals]);
-
-  const selectedDate = useMemo(() => {
-    if (!selectedDay || !selectedTime) return undefined;
-    return set(selectedDay, {
-      hours: Number(selectedTime.split(":")[0]),
-      minutes: Number(selectedTime.split(":")[1]),
-      seconds: 0,
-      milliseconds: 0,
-    });
-  }, [selectedDay, selectedTime]);
-
-  const availableProfessionals = useMemo(() => {
-    if (!selectedTime || !selectedDate) return [];
-
-    const bookedProfessionals = dayBookings
-      .filter(
-        (booking) =>
-          booking.date.getHours() === selectedDate.getHours() &&
-          booking.date.getMinutes() === selectedDate.getMinutes()
-      )
-      .map((booking) => booking.professionalId);
-
-
-    return service.professionals.filter(
-      (prof) => !bookedProfessionals.includes(prof.id)
-    );
-  }, [selectedTime, selectedDate, dayBookings, service.professionals]); 
+  const availableTimes = day && availability?.day === day
+    ? availableBookingTimes(day, service.barbershop.workingHours, service.professionals, availability.bookings)
+    : [];
+  const selectedDate = useMemo(() => day && selectedTime ? bookingInstant(day, selectedTime) : undefined, [day, selectedTime]);
+  const availableProfessionals = selectedDate && availability && availability.day === day
+    ? freeProfessionals(selectedDate, service.professionals, availability.bookings)
+    : [];
 
   const resetBookingState = () => {
     setSelectedDay(undefined);
     setSelectedTime(undefined);
     setSelectedProfessional(undefined);
-    setDayBookings([]);
+    setAvailability(null);
     setBookingSheetIsOpen(false);
   };
 
@@ -145,7 +82,7 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
   };
 
   const handleCreateBooking = async () => {
-    if (!selectedDate || !selectedProfessional) return;
+    if (!selectedDate || !selectedProfessional || !availableTimes.includes(selectedTime ?? "") || !availableProfessionals.some(p => p.id === selectedProfessional.id)) return;
     setIsSubmitting(true);
     try {
       await createBooking({
@@ -162,7 +99,13 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
       });
     } catch (error) {
       console.error(error);
-      toast.error("Erro ao criar reserva!");
+      toast.error(error instanceof Error ? error.message : "Erro ao criar reserva!");
+      setSelectedTime(undefined);
+      setSelectedProfessional(undefined);
+      if (day) {
+        setAvailability(null);
+        getDayBookings({ barbershopId: service.barbershop.id, day }).then(bookings => setAvailability({ day, bookings })).catch(() => {});
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -189,12 +132,10 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
               <p className="text-sm font-bold text-primary">
                 {Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(service.price))}
               </p>
-              <Sheet open={bookingSheetIsOpen} onOpenChange={setBookingSheetIsOpen}>
-                <SheetTrigger asChild>
+              <Sheet open={bookingSheetIsOpen} onOpenChange={(open) => { if (!open) resetBookingState(); else handleBookingClick(); }}>
                   <Button variant="secondary" size="sm" onClick={handleBookingClick}>
                     Reservar
                   </Button>
-                </SheetTrigger>
                 <SheetContent className="flex flex-col p-0">
                   <SheetHeader className="border-b px-5 py-4">
                     <SheetTitle>Fazer Reserva</SheetTitle>
@@ -207,16 +148,19 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
                         selected={selectedDay}
                         onSelect={(date) => {
                           setSelectedDay(date);
+                          setAvailability(null);
                           setSelectedTime(undefined);
                           setSelectedProfessional(undefined);
                         }}
-                        fromDate={new Date()}
+                        today={calendarDate(bookingDay())}
+                        defaultMonth={calendarDate(bookingDay())}
                         disabled={(date) => {
-                          const dayOfWeek = date.getDay();
+                          const dayLabel = calendarDay(date);
+                          const dayOfWeek = bookingWeekday(dayLabel);
                           const workingHours = service.barbershop.workingHours.find(
                             (wh) => wh.dayOfWeek === dayOfWeek
                           );
-                          return !workingHours || !workingHours.isOpen;
+                          return dayLabel < bookingDay() || !workingHours || !workingHours.isOpen;
                         }}
                       />
                     </div>
@@ -276,7 +220,7 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
                   <SheetFooter className="border-t px-5 py-4">
                     <Button
                       onClick={handleCreateBooking}
-                      disabled={!selectedDate || !selectedProfessional || isSubmitting}
+                      disabled={!selectedDate || !selectedProfessional || !availableTimes.includes(selectedTime ?? "") || !availableProfessionals.some(p => p.id === selectedProfessional.id) || isSubmitting}
                       className="w-full"
                     >
                       {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
