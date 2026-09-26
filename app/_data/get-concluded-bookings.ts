@@ -9,7 +9,7 @@ export const getConcludedBookings = async () => {
   if (!session?.user) return []
   return db.booking.findMany({
     where: {
-      userId: (session.user as any).id,
+      userId: session.user.id,
       date: {
         lt: new Date(),
       },

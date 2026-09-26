@@ -39,20 +39,16 @@ Acesse `http://localhost:3000`. Não execute o seed em um banco existente sem re
 ```bash
 npm test
 npx tsc --noEmit
+npm run lint
+npm run build
 ```
 
-A suíte valida expediente, fuso, data futura, intervalos, autenticação, profissional habilitado, conflito e criação da reserva com o usuário da sessão. As operações de banco são simuladas: a concorrência real de PostgreSQL precisa de teste de integração antes da publicação.
+A suíte cobre agenda no fuso de São Paulo, permissões, cadastro e privacidade. Há testes adicionais com PostgreSQL real para concorrência e exclusão transacional. Consulte [o relatório de validação](docs/VALIDACAO-ONDAS-1-3.md) para reproduzir migrations e integração em banco descartável.
 
 ## Resultado e limites
 
 A versão local possui páginas de serviços, reservas e administração. As capturas disponíveis no portfólio ilustram a interface. Não há demo pública publicada nesta revisão.
 
-Antes de uma demo pública:
+As correções das Ondas 1–3 unificam autorização por proprietário/SUPER_ADMIN, limitam os dados públicos de disponibilidade e usam São Paulo em toda a agenda. O login disponível é por e-mail/senha; a opção Google incompleta foi removida.
 
-- Revisar autorização de todas as Server Actions administrativas. Por exemplo, `update-working-hours.ts` ainda precisa validar sessão e propriedade da barbearia.
-- A interface de datas utiliza o fuso do navegador; o servidor aplica São Paulo. Unificar a seleção para visitantes em outros fusos.
-- Agendamentos assumem duração fixa de 30 minutos. Serviços com durações diferentes exigem modelagem adicional.
-- O login Google usa PrismaAdapter, mas o schema local não contém todos os modelos padrão do adapter. Validar esse fluxo ou mantê-lo desativado antes de anunciá-lo.
-- Revisar dependências e usar somente dados fictícios no ambiente de demonstração.
-
-As alterações locais já existentes foram preservadas. A publicação exige sincronizar esta versão com o repositório e configurar hospedagem, banco e autenticação; nenhuma dessas operações foi executada automaticamente.
+Limites: reservas duram 30 minutos, exclusões administrativas podem apagar histórico passado, e o seed exige revisão antes de uso. Atualização de dependências e preparação de dados demonstrativos continuam pendentes. Nenhuma migration foi aplicada ao banco Neon nesta revisão; valide divergências de schema/histórico antes de atualizar uma base existente.

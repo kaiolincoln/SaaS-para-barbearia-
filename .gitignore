@@ -37,3 +37,6 @@ next-env.d.ts
 
 .env
 .postgres-data
+
+# Prisma Client is generated in node_modules; legacy copies are not source.
+/app/generated/

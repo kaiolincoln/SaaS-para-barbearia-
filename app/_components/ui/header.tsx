@@ -1,26 +1,26 @@
 // CAMINHO: app/_components/ui/header.tsx
 
-import Image from "next/image";
-import Link from "next/link";
-import { getServerSession } from "next-auth";
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetTrigger } from "@/components/ui/sheet";
-import { MenuIcon, UserIcon } from "lucide-react";
-import SidebarSheet from "./sidebar-sheet";
-import { authOptions } from "@/_lib/auth";
-import { db } from "@/_lib/prisma";
+import Image from "next/image"
+import Link from "next/link"
+import { getServerSession } from "next-auth"
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetTrigger } from "@/components/ui/sheet"
+import { MenuIcon, UserIcon } from "lucide-react"
+import SidebarSheet from "./sidebar-sheet"
+import { authOptions } from "@/_lib/auth"
+import { db } from "@/_lib/prisma"
 
 const Header = async () => {
-  const session = await getServerSession(authOptions);
-  let isAdmin = false;
+  const session = await getServerSession(authOptions)
+  let isAdmin = false
 
   if (session?.user) {
     const userIsAdmin = await db.barbershop.findFirst({
       where: {
         ownerId: session.user.id,
       },
-    });
-    isAdmin = session.user.role === "SUPER_ADMIN" || !!userIsAdmin; 
+    })
+    isAdmin = session.user.role === "SUPER_ADMIN" || !!userIsAdmin
   }
 
   return (
@@ -54,8 +54,7 @@ const Header = async () => {
         </div>
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default Header;
-
+export default Header

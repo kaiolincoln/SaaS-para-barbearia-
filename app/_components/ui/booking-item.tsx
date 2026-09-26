@@ -1,11 +1,11 @@
-"use client";
+"use client"
 
-import { Prisma } from "@prisma/client";
-import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { isFuture } from "date-fns";
-import { formatBookingDate } from "@/_lib/booking-time";
+import { Prisma } from "@prisma/client"
+import { Avatar, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
+import { isFuture } from "date-fns"
+import { formatBookingDate } from "@/_lib/booking-time"
 import {
   Sheet,
   SheetClose,
@@ -14,10 +14,10 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
-import Image from "next/image";
-import PhoneItem from "./phone-item";
-import { Button } from "@/components/ui/button";
+} from "@/components/ui/sheet"
+import Image from "next/image"
+import PhoneItem from "./phone-item"
+import { Button } from "@/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -26,51 +26,51 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { DialogClose } from "@radix-ui/react-dialog";
-import { deleteBooking } from "../../_actions/delete-booking";
-import { toast } from "sonner";
-import { useState } from "react";
-import BookingSummary from "./booking-summary";
-import { Loader2 } from "lucide-react"; // ✅ Importar ícone de loading
+} from "@/components/ui/dialog"
+import { DialogClose } from "@radix-ui/react-dialog"
+import { deleteBooking } from "../../_actions/delete-booking"
+import { toast } from "sonner"
+import { useState } from "react"
+import BookingSummary from "./booking-summary"
+import { Loader2 } from "lucide-react" // ✅ Importar ícone de loading
 
 interface BookingItemProps {
   booking: Prisma.BookingGetPayload<{
     include: {
       service: {
         include: {
-          barbershop: true;
-        };
-      };
-    };
-  }>;
+          barbershop: true
+        }
+      }
+    }
+  }>
 }
 
 const BookingItem = ({ booking }: BookingItemProps) => {
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isDeleteLoading, setIsDeleteLoading] = useState(false); // ✅ Adicionar estado de loading
+  const [isSheetOpen, setIsSheetOpen] = useState(false)
+  const [isDeleteLoading, setIsDeleteLoading] = useState(false) // ✅ Adicionar estado de loading
   const {
     service: { barbershop },
-  } = booking;
-  const isConfirmed = isFuture(booking.date);
+  } = booking
+  const isConfirmed = isFuture(booking.date)
 
   const handleCancelBooking = async () => {
-    setIsDeleteLoading(true); // ✅ Ativar loading
+    setIsDeleteLoading(true) // ✅ Ativar loading
     try {
-      await deleteBooking(booking.id);
-      setIsSheetOpen(false);
-      toast.success("Reserva cancelada com sucesso!");
+      await deleteBooking(booking.id)
+      setIsSheetOpen(false)
+      toast.success("Reserva cancelada com sucesso!")
     } catch (error) {
-      console.error(error);
-      toast.error("Erro ao cancelar reserva. Tente novamente.");
+      console.error(error)
+      toast.error("Erro ao cancelar reserva. Tente novamente.")
     } finally {
-      setIsDeleteLoading(false); // ✅ Desativar loading
+      setIsDeleteLoading(false) // ✅ Desativar loading
     }
-  };
+  }
 
   const handleSheetOpenChange = (isOpen: boolean) => {
-    setIsSheetOpen(isOpen);
-  };
+    setIsSheetOpen(isOpen)
+  }
 
   return (
     <Sheet open={isSheetOpen} onOpenChange={handleSheetOpenChange}>
@@ -108,14 +108,14 @@ const BookingItem = ({ booking }: BookingItemProps) => {
       </SheetTrigger>
 
       {/* ✅ INÍCIO DA CORREÇÃO DO LAYOUT */}
-      <SheetContent className="flex flex-col w-[85%] p-0">
+      <SheetContent className="flex w-[85%] flex-col p-0">
         <SheetHeader className="border-b border-solid border-secondary px-5 py-6 text-left">
           <SheetTitle>Informações da Reserva</SheetTitle>
         </SheetHeader>
 
         {/* Área de Scroll */}
         <div className="flex-1 overflow-y-auto">
-          <div className="relative h-[180px] w-full mt-6">
+          <div className="relative mt-6 h-[180px] w-full">
             <Image
               alt={`Mapa da barbearia ${booking.service.barbershop.name}`}
               src="/map.png"
@@ -147,7 +147,6 @@ const BookingItem = ({ booking }: BookingItemProps) => {
 
               <div className="mb-3 mt-6">
                 <BookingSummary
-
                   service={booking.service}
                   selectedDate={booking.date}
                 />
@@ -186,7 +185,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                   </DialogHeader>
                   <DialogFooter className="flex-row gap-3">
                     <DialogClose asChild>
-                      <Button variant="secondary" className="w-full mt-0">
+                      <Button variant="secondary" className="mt-0 w-full">
                         Voltar
                       </Button>
                     </DialogClose>
@@ -196,7 +195,9 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                       className="w-full"
                       disabled={isDeleteLoading}
                     >
-                      {isDeleteLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {isDeleteLoading && (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      )}
                       Confirmar
                     </Button>
                   </DialogFooter>
@@ -208,7 +209,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
       </SheetContent>
       {/* ✅ FIM DA CORREÇÃO DO LAYOUT */}
     </Sheet>
-  );
-};
+  )
+}
 
-export default BookingItem;
+export default BookingItem

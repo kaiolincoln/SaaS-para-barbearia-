@@ -1,11 +1,11 @@
-"use server";
+"use server"
 
-import { db } from "@/_lib/prisma";
+import { db } from "@/_lib/prisma"
 import { bookingDayBounds } from "@/_lib/booking-time"
 
 interface GetDayBookingsParams {
-  barbershopId: string;
-  day: string;
+  barbershopId: string
+  day: string
 }
 
 export const getDayBookings = async (params: GetDayBookingsParams) => {
@@ -17,7 +17,7 @@ export const getDayBookings = async (params: GetDayBookingsParams) => {
       },
       date: bookingDayBounds(params.day),
     },
-  });
+  })
 
-  return bookings;
-};
+  return bookings
+}

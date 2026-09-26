@@ -1,15 +1,15 @@
-"use client";
+"use client"
 
-import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import SidebarSheet from "@/_components/ui/sidebar-sheet";
-import { Barbershop } from "@prisma/client";
-import { ChevronLeftIcon, MapPinIcon, MenuIcon, StarIcon } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
+import { Button } from "@/components/ui/button"
+import { Sheet, SheetTrigger } from "@/components/ui/sheet"
+import SidebarSheet from "@/_components/ui/sidebar-sheet"
+import { Barbershop } from "@prisma/client"
+import { ChevronLeftIcon, MapPinIcon, MenuIcon, StarIcon } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
 
 interface BarbershopInfoProps {
-  barbershop: Barbershop;
+  barbershop: Barbershop
 }
 
 const BarbershopInfo = ({ barbershop }: BarbershopInfoProps) => {
@@ -38,9 +38,7 @@ const BarbershopInfo = ({ barbershop }: BarbershopInfoProps) => {
               <MenuIcon />
             </Button>
           </SheetTrigger>
-          <SheetContent className="p-0">
-            <SidebarSheet />
-          </SheetContent>
+          <SidebarSheet />
         </Sheet>
 
         <Image
@@ -64,7 +62,7 @@ const BarbershopInfo = ({ barbershop }: BarbershopInfoProps) => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default BarbershopInfo;
+export default BarbershopInfo
