@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import "next-auth";
 import { Role } from "@prisma/client";
 
 declare module "next-auth" {
@@ -17,7 +17,6 @@ declare module "next-auth" {
       name?: string | null;
       image?: string | null;
       role: Role;
-      barbershopId?: string;
     };
   }
 }

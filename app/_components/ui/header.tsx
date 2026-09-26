@@ -17,10 +17,10 @@ const Header = async () => {
   if (session?.user) {
     const userIsAdmin = await db.barbershop.findFirst({
       where: {
-        ownerId: (session.user as any).id,
+        ownerId: session.user.id,
       },
     });
-    isAdmin = !!userIsAdmin; 
+    isAdmin = session.user.role === "SUPER_ADMIN" || !!userIsAdmin; 
   }
 
   return (

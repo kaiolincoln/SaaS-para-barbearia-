@@ -46,7 +46,7 @@ const ServiceItem = ({ service, isAuthenticated }: ServiceItemProps) => {
   const [selectedDay, setSelectedDay] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | undefined>(undefined);
-  const [dayBookings, setDayBookings] = useState<Booking[]>([]);
+  const [dayBookings, setDayBookings] = useState<Pick<Booking, "professionalId" | "date">[]>([]);
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
 
   useEffect(() => {

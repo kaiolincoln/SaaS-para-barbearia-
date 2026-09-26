@@ -1,4 +1,4 @@
-import { getServerSession } from "next-auth";
+import { requireBarbershopAccess } from "@/_lib/authorize-barbershop";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
@@ -6,7 +6,6 @@ import { ptBR } from "date-fns/locale";
 import { ChevronLeftIcon } from "lucide-react";
 
 import { db } from "@/_lib/prisma";
-import { authOptions } from "@/_lib/auth";
 import { Button } from "@/components/ui/button";
 import { ServiceListItem } from "./_components/service-list-item";
 import { AddServiceSheet } from "./_components/add-service-sheet";
@@ -22,9 +21,10 @@ interface BarbershopDetailsPageProps {
 const BarbershopDetailsPage = async ({
   params,
 }: BarbershopDetailsPageProps) => {
-  const session = await getServerSession(authOptions);
-
-  if (!params.id || !session?.user) {
+  if (!params.id) return redirect("/");
+  try {
+    await requireBarbershopAccess(params.id);
+  } catch {
     return redirect("/");
   }
 
@@ -39,7 +39,7 @@ const BarbershopDetailsPage = async ({
           bookings: {
             where: { date: { gte: new Date() } },
             include: {
-              user: true,
+              user: { select: { name: true } },
               service: true,
             },
             orderBy: {
@@ -55,10 +55,6 @@ const BarbershopDetailsPage = async ({
 
   if (!barbershop) {
     return redirect("/admin");
-  }
-
-  if (barbershop.ownerId !== (session.user as any).id) {
-    return redirect("/");
   }
 
   const allBookings = barbershop.services.flatMap((s) => s.bookings ?? []);

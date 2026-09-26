@@ -7,7 +7,7 @@ import Link from "next/link";
 import { db } from "@/_lib/prisma";
 import { authOptions } from "@/_lib/auth"; 
 import { Button } from "@/components/ui/button";
-import { StarIcon, MapPinIcon } from "lucide-react";
+import { MapPinIcon } from "lucide-react";
 
 const AdminPage = async () => {
   const session = await getServerSession(authOptions);
@@ -17,9 +17,7 @@ const AdminPage = async () => {
   }
 
   const barbershops = await db.barbershop.findMany({
-    where: {
-      ownerId: (session.user as any).id,
-    },
+    where: session.user.role === "SUPER_ADMIN" ? {} : { ownerId: session.user.id },
   });
 
   return (

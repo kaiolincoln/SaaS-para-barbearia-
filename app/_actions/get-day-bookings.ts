@@ -10,6 +10,7 @@ interface GetDayBookingsParams {
 
 export const getDayBookings = async (params: GetDayBookingsParams) => {
   const bookings = await db.booking.findMany({
+    select: { professionalId: true, date: true },
     where: {
       service: {
         barbershopId: params.barbershopId,

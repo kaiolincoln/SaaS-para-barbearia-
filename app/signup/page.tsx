@@ -64,9 +64,9 @@ const SignupPage = () => {
       });
       router.push('/');
 
-    } catch (error: any) {
+    } catch (error) {
       toast.error('Ops! Algo deu errado.', {
-        description: error.message || 'Ocorreu um erro. Tente novamente.',
+        description: error instanceof Error ? error.message : 'Ocorreu um erro. Tente novamente.',
         position: 'top-center',
       });
     } finally {
@@ -89,13 +89,13 @@ const SignupPage = () => {
               <Input id="name" type="text" placeholder="Nome Completo" value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
             <div className='space-y-2'>
-              <Input id="telefone" type="number" placeholder="telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} required />
+              <Input id="telefone" type="tel" placeholder="telefone" value={telefone} onChange={(e) => setTelefone(e.target.value)} required />
             </div>
             <div className="space-y-2">
               <Input id="email" type="email" placeholder="E-mail" value={email} onChange={(e) => setEmail(e.target.value)} required />
             </div>
             <div className="space-y-2">
-              <Input id="password" type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+              <Input id="password" type="password" placeholder="Senha" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
             </div>
 
             <div className="space-y-2">
@@ -106,7 +106,7 @@ const SignupPage = () => {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>

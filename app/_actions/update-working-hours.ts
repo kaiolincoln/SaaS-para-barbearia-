@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache"; 
+import { actionError, requireBarbershopAccess } from "@/_lib/authorize-barbershop";
+import { revalidateBarbershop } from "@/_lib/revalidate-barbershop"; 
 import { z } from "zod";
 import { db } from "@/_lib/prisma";
 
@@ -35,6 +36,7 @@ export const updateWorkingHours = async (formData: FormData) => {
   const { dayOfWeek, isOpen, startTime, endTime, barbershopId } = validatedFields.data;
 
   try {
+    await requireBarbershopAccess(barbershopId);
     await db.workingHours.upsert({
       where: {
         barbershopId_dayOfWeek: {
@@ -57,13 +59,11 @@ export const updateWorkingHours = async (formData: FormData) => {
     });
 
     
-    revalidatePath(`/barbershops/${barbershopId}`);
-    revalidatePath("/");
+    revalidateBarbershop(barbershopId);
 
     return { success: true };
   } catch (error) {
-    console.error(error);
-    return { error: "Erro ao salvar os horários." };
+    return { error: actionError(error) };
   }
 };
 

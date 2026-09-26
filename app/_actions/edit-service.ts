@@ -2,11 +2,8 @@
 
 import { z } from "zod";
 import { db } from "@/_lib/prisma";
-import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/_lib/auth";
-import { Role } from "@prisma/client";
-
+import { AccessError, actionError, requireBarbershopAccess, requireShopProfessionals } from "@/_lib/authorize-barbershop";
+import { revalidateBarbershop } from "@/_lib/revalidate-barbershop";
 
 const EditServiceSchema = z.object({
   id: z.string({ required_error: "ID do serviço é obrigatório." }),
@@ -31,15 +28,9 @@ export type FormState = {
 };
 
 export const editService = async (
-  prevState: FormState,
+  _prevState: FormState,
   formData: FormData
 ): Promise<FormState> => {
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session.user) {
-    return { success: false, error: "Não autenticado." };
-  }
-
   const rawData = {
     ...Object.fromEntries(formData),
     professionalIds: formData.getAll("professionalIds"),
@@ -58,34 +49,20 @@ export const editService = async (
   const { id, professionalIds, ...dataToUpdate } = validatedFields.data;
 
   try {
-    const serviceToUpdate = await db.barbershopService.findUnique({
+    const barbershopId = await db.$transaction(async tx => {
+    const serviceToUpdate = await tx.barbershopService.findUnique({
       where: { id: id },
       select: { barbershopId: true },
     });
 
     if (!serviceToUpdate) {
-      return { success: false, error: "Serviço não encontrado." };
+      throw new AccessError("Serviço não encontrado.");
     }
 
-    const barbershop = await db.barbershop.findUnique({
-      where: { id: serviceToUpdate.barbershopId },
-      select: { ownerId: true },
-    });
+    await requireBarbershopAccess(serviceToUpdate.barbershopId, tx);
+    const professionals = await requireShopProfessionals(serviceToUpdate.barbershopId, professionalIds ?? [], tx);
 
-    if (!barbershop) {
-      return { success: false, error: "Barbearia associada ao serviço não encontrada." };
-    }
-
-    if (session.user.role === Role.USER) {
-      return { success: false, error: "Acesso negado. Permissão insuficiente." };
-    }
-
-    if (session.user.role === Role.BARBERSHOP_ADMIN && barbershop.ownerId !== session.user.id) {
-      return { success: false, error: "Acesso negado. Você não é o proprietário desta barbearia." };
-    }
-
-
-    await db.barbershopService.update({
+    await tx.barbershopService.update({
       where: {
         id: id,
       },
@@ -93,18 +70,19 @@ export const editService = async (
         ...dataToUpdate,
         imageUrl: dataToUpdate.imageUrl || "https://utfs.io/f/988646ea-dcb6-4f47-8a03-8d4586b7bc21-16v.png",
         professionals: {
-          set: professionalIds?.map((profId ) => ({ id: profId })) || [],
+          set: professionals,
         },
       },
     });
 
-    revalidatePath("/admin/.*", "layout");
+    return serviceToUpdate.barbershopId;
+    }, { isolationLevel: "Serializable" });
+    revalidateBarbershop(barbershopId);
     return { success: true };
   } catch (e) {
-    console.error("Erro ao atualizar serviço:", e);
     return {
       success: false,
-      error: "Ocorreu um erro no servidor ao tentar atualizar o serviço.",
+      error: actionError(e),
     };
   }
 };

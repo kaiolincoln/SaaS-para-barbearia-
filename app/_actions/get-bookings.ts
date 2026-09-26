@@ -11,6 +11,7 @@ interface GetBookingsProps {
 
 export const getBookings = async ({ date, serviceId }: GetBookingsProps) => {
   const bookings = await db.booking.findMany({
+    select: { professionalId: true, date: true },
     where: {
       
       serviceId: serviceId, 

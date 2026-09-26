@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { db } from "@/_lib/prisma";
-import { revalidatePath } from "next/cache";
+import { actionError, requireBarbershopAccess, requireShopProfessionals } from "@/_lib/authorize-barbershop";
+import { revalidateBarbershop } from "@/_lib/revalidate-barbershop";
 
 
 const AddServiceSchema = z.object({
@@ -28,7 +29,7 @@ export type AddServiceFormState = {
 };
 
 export const addService = async (
-  prevState: AddServiceFormState,
+  _prevState: AddServiceFormState,
   formData: FormData
 ): Promise<AddServiceFormState> => {
   const rawData = {
@@ -50,25 +51,27 @@ export const addService = async (
   const { professionalIds, ...serviceData } = validatedFields.data;
 
   try {
-    await db.barbershopService.create({
+    await db.$transaction(async tx => {
+    await requireBarbershopAccess(serviceData.barbershopId, tx);
+    const professionals = await requireShopProfessionals(serviceData.barbershopId, professionalIds ?? [], tx);
+    await tx.barbershopService.create({
       data: {
         ...serviceData,
         imageUrl: serviceData.imageUrl || "https://utfs.io/f/988646ea-dcb6-4f47-8a03-8d4586b7bc21-16v.png",
         professionals: {
-          connect: professionalIds?.map((id ) => ({ id })) || [],
+          connect: professionals,
         },
       },
     });
 
-    revalidatePath(`/admin/barbershops/${validatedFields.data.barbershopId}`);
-    revalidatePath("/admin");
+    }, { isolationLevel: "Serializable" });
+    revalidateBarbershop(serviceData.barbershopId);
 
     return { success: true };
   } catch (e) {
-    console.error("Erro ao adicionar serviço:", e);
     return {
       success: false,
-      error: "Ocorreu um erro no servidor ao tentar adicionar o serviço.",
+      error: actionError(e),
     };
   }
 };

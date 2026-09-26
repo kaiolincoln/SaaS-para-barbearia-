@@ -2,7 +2,8 @@
 
 import { z } from "zod";
 import { db } from "@/_lib/prisma";
-import { revalidatePath } from "next/cache";
+import { actionError, requireBarbershopAccess } from "@/_lib/authorize-barbershop";
+import { revalidateBarbershop } from "@/_lib/revalidate-barbershop";
 
 const AddProfessionalSchema = z.object({
   name: z.string().min(3, "O nome deve ter no mínimo 3 caracteres.").trim(),
@@ -21,6 +22,7 @@ export const addProfessional = async (formData: FormData) => {
   }
 
   try {
+    await requireBarbershopAccess(validatedFields.data.barbershopId);
     await db.professional.create({
       data: {
         ...validatedFields.data,
@@ -28,10 +30,9 @@ export const addProfessional = async (formData: FormData) => {
       },
     } );
 
-    revalidatePath(`/admin/barbershops/${validatedFields.data.barbershopId}`);
+    revalidateBarbershop(validatedFields.data.barbershopId);
     return { success: true };
   } catch (e) {
-    console.error(e);
-    return { error: "Falha ao adicionar profissional." };
+    return { error: actionError(e) };
   }
 };

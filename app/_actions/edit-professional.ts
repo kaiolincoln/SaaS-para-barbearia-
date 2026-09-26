@@ -1,10 +1,9 @@
+"use server";
+
 import { z } from "zod";
 import { db } from "@/_lib/prisma";
-import { revalidatePath } from "next/cache";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/_lib/auth";
-import { Role } from "@prisma/client";
-
+import { AccessError, actionError, requireBarbershopAccess } from "@/_lib/authorize-barbershop";
+import { revalidateBarbershop } from "@/_lib/revalidate-barbershop";
 
 const editProfessionalSchema = z.object({
   id: z.string().min(1, "ID do profissional é obrigatório."),
@@ -26,15 +25,9 @@ export interface EditProfessionalFormState {
 }
 
 export const editProfessional = async (
-  prevState: EditProfessionalFormState, 
+  _prevState: EditProfessionalFormState, 
   formData: FormData
 ): Promise<EditProfessionalFormState> => { 
-  const session = await getServerSession(authOptions);
-
-  if (!session || !session.user) {
-    return { success: false, error: "Não autenticado." };
-  }
-
   const rawData = Object.fromEntries(formData.entries());
   const validatedFields = editProfessionalSchema.safeParse(rawData);
 
@@ -50,30 +43,13 @@ export const editProfessional = async (
   const { id, name, imageUrl, barbershopId } = validatedFields.data;
 
   try {
-    // Buscar a barbearia para verificar o proprietário
-    const barbershop = await db.barbershop.findUnique({
-      where: { id: barbershopId },
-      select: { ownerId: true },
-    });
-
-    if (!barbershop) {
-      return { success: false, error: "Barbearia não encontrada." };
-    }
-
-    // Lógica de autorização
-    if (session.user.role === Role.USER) {
-      return { success: false, error: "Acesso negado. Permissão insuficiente." };
-    }
-
-    if (session.user.role === Role.BARBERSHOP_ADMIN && barbershop.ownerId !== session.user.id) {
-      return { success: false, error: "Acesso negado. Você não é o proprietário desta barbearia." };
-    }
-
-    // SUPER_ADMIN tem acesso total, então não precisa de verificação adicional aqui.
+    await requireBarbershopAccess(barbershopId);
+    const professional = await db.professional.findFirst({ where: { id, barbershopId } });
+    if (!professional) throw new AccessError("Profissional não encontrado nesta barbearia.");
 
     await db.professional.update({
       where: {
-        id: id,
+        id: id, barbershopId,
       },
       data: {
         name,
@@ -81,18 +57,16 @@ export const editProfessional = async (
       },
     });
 
-    revalidatePath(`/admin/barbershops/${barbershopId}`);
-    revalidatePath("/");
+    revalidateBarbershop(barbershopId);
 
     return {
       success: true,
       error: null,
     };
   } catch (error) {
-    console.error("Erro ao editar profissional:", error);
     return {
       success: false,
-      error: "Ocorreu um erro no servidor ao tentar editar o profissional.",
+      error: actionError(error),
     };
   }
 };

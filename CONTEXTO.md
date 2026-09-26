@@ -49,8 +49,8 @@ O alias `@/*` aponta para `app/*`, não para a raiz. O layout carrega Inter via 
 | `/barbershops/[id]` | Pública; detalhes, serviços, profissionais e expediente; ID inexistente retorna 404 |
 | `/bookings` | Reservas do usuário; visitante sem sessão recebe 404 |
 | `/signup` | Formulário cliente, cadastro e login automático por credenciais |
-| `/admin` | Exige sessão e lista barbearias cujo `ownerId` é o usuário; não verifica role |
-| `/admin/barbershops/[id]` | Exige sessão e propriedade; não oferece exceção para SUPER_ADMIN |
+| `/admin` | Lista barbearias próprias; SUPER_ADMIN lista todas |
+| `/admin/barbershops/[id]` | Exige helper de acesso antes de consultar dados sensíveis; permite SUPER_ADMIN |
 | `/api/auth/[...nextauth]` | GET/POST do NextAuth |
 | `/api/auth/register` | POST de cadastro por nome, e-mail e senha |
 
@@ -98,19 +98,22 @@ Credenciais usam `bcryptjs.compare`; cadastro usa `bcryptjs.hash` com custo 10. 
 
 GoogleProvider e PrismaAdapter estão configurados e aparecem na interface, mas o schema não contém os modelos de adapter Account, Session e VerificationToken, nem `emailVerified`. Esse fluxo não está validado como funcional.
 
-| Operação | Proteção encontrada |
+### Onda 1 — autorização e privacidade (implementada)
+
+`requireBarbershopAccess` é a fonte única das permissões administrativas: sessão com ID e role reconhecida, barbearia existente, proprietário (`ownerId`) ou SUPER_ADMIN. Um proprietário com role USER também pode administrar sua barbearia, conforme a regra de propriedade; BARBERSHOP_ADMIN sem propriedade é rejeitado. IDs de barbearia informados pelo cliente não bastam para autorizar recursos de outra barbearia.
+
+| Operação | Regra implementada |
 | --- | --- |
-| `createBooking` | Sessão obrigatória, usuário obtido no servidor, validação do serviço/profissional/horário e conflito |
-| `deleteBooking` | Apaga por ID recebido, sem verificar sessão nem propriedade |
-| `addService`, `addProfessional`, `updateWorkingHours` | Validam entrada com Zod, mas não verificam sessão nem propriedade |
-| `editService`, `deleteService` | Exigem sessão; rejeitam USER e conferem proprietário para BARBERSHOP_ADMIN; SUPER_ADMIN passa |
-| `editProfessional` | Verifica propriedade da barbearia enviada, sem conferir se o profissional pertence a ela; falta a diretiva `"use server"` apesar do import por componente cliente |
-| `deleteProfessional` | Verifica role e usa `session.user.barbershopId`, que os callbacks de autenticação não preenchem |
-| `getDayBookings`, `getBookings` | Consultas sem autenticação; retornam registros completos de Booking, incluindo IDs de usuários |
+| add/edit/delete de serviço | Helper; criação/edição validam todos os profissionais da mesma barbearia dentro de transação serializável |
+| add/edit/delete de profissional | Helper e vínculo do profissional com a barbearia; edição é Server Action |
+| updateWorkingHours | Helper antes da escrita |
+| deleteBooking | Exclusivo do titular autenticado, inclusive para administradores; filtro por usuário na leitura e exclusão |
+| getDayBookings/getBookings | Públicas; select apenas professionalId/date |
+| Cadastro | Zod no servidor, nome obrigatório, e-mail válido, senha com pelo menos 8 caracteres e no máximo 72 bytes (limite bcrypt); telefone mapeado para tell; resposta apenas id/name/email |
 
-Proteção de página não substitui autorização na operação do servidor. O padrão de propriedade e roles ainda precisa ser unificado. `editService` e `addService` também conectam IDs de profissionais sem confirmar que pertencem à mesma barbearia.
+Exclusões de serviço/profissional bloqueiam reservas futuras e removem reservas passadas e recurso na mesma transação serializável. A remoção de histórico é deliberada porque os vínculos são obrigatórios e o escopo não inclui exclusão lógica. As telas administrativa, pública e de reservas são revalidadas por helper comum. O painel permite SUPER_ADMIN e valida acesso antes de consultar dados de clientes; seleciona apenas o nome do cliente.
 
-`deleteService` bloqueia reservas futuras, apaga reservas antigas e depois o serviço, sem transação envolvendo a sequência. Isso elimina histórico. `deleteProfessional` não trata previamente reservas vinculadas e pode falhar por chave estrangeira.
+Verificação da Onda 1: 53 testes passaram (40 autorização, 8 cadastro, 5 agenda existente). Os testes parametrizados verificam todas as sete mutações administrativas sem sessão, com outro proprietário e com role desconhecida, sem escritas; também cobrem proprietário autorizado, SUPER_ADMIN, cancelamento, vínculos cruzados e bloqueio de exclusão com reservas futuras. A checagem de tipos passou. Lint continua pendente para a Onda 3.
 
 ## 7. Interface e administração
 
@@ -165,16 +168,7 @@ Configurações a reconciliar: coexistem `.eslintrc.json` e `eslint.config.mjs`;
 
 ## 10. Pendências prioritárias encontradas
 
-1. Corrigir autorização das actions sem sessão/propriedade e unificar roles com `ownerId`; conferir o recurso real em edição de profissional e os vínculos entre serviços/profissionais.
-2. Restringir a resposta do cadastro: atualmente devolve o usuário completo, incluindo o hash de senha. Validar nome, e-mail e senha no servidor; a validação atual só verifica presença de e-mail/senha. O formulário envia `telefone`, mas a API ignora esse campo e o banco o chama `tell`.
-3. Corrigir a fronteira servidor/cliente de `edit-professional.ts`, que importa Prisma e autenticação sem ser marcado como Server Action.
-4. Reconciliar schema/migrations, adapter de autenticação e seed para permitir instalação e demonstração reproduzíveis.
-5. Corrigir envio de dia fechado e unificar o fuso entre disponibilidade, interface e validação; testar concorrência real no PostgreSQL.
-6. Reduzir as consultas públicas de disponibilidade aos campos necessários, sem devolver identificação de clientes.
-7. Revisar exclusão de histórico, transações e revalidação de cache. `editService` e `deleteService` passam `/admin/.*`, que não descreve uma rota real da aplicação; outras ações revalidam apenas parte das telas afetadas.
-8. Corrigir lint/configurações, imagens ausentes e contratos serializados. Verificar passagem de Decimal e objetos completos do Prisma para componentes cliente no build e navegador.
-
-Esses itens são achados de leitura de código; impactos que dependem de execução ainda precisam de reprodução. Nenhuma correção funcional foi feita como parte da documentação.
+As falhas de autorização, cadastro e privacidade da auditoria inicial foram tratadas na Onda 1. Permanecem para as ondas seguintes: fechamento de dia, fuso único, migrations, decisão Google e configuração de lint. Fora do escopo: imagens ausentes, composição de sheets, paginação, avaliações e features de produto.
 
 ## 11. Guia para próximas tarefas
 
