@@ -220,3 +220,8 @@ Tokens shadcn preservados, raio 4 px, cards sem sombras e hairlines discretas. A
 `DuotonePhoto` centraliza o filtro SVG sRGB (ink → bone) para capas públicas, miniaturas de barbearia em reservas e capas administrativas. Retratos profissionais permanecem coloridos. Home, busca, detalhe e reservas usam hierarquia e espaçamento comuns; painel mantém os fluxos existentes.
 
 Contraste: bone sobre ink com contraste superior a 14:1; warm-gray/ink 4,75:1. Warm-gray/surface 4,28:1 exige texto mais claro nas superfícies. Bone/vermelho 4,25:1: botões primários usam 20 px em negrito, atendendo ao limiar de texto grande (3:1). Foco visível e prefers-reduced-motion tratados globalmente. Validar responsividade, filtro SVG e navegação por teclado em navegador antes do aceite visual final; build não substitui essa revisão.
+
+
+## Cache de desenvolvimento
+
+Next dev usa `.next-dev`; build e start usam `.next`. A separação evita 404 de main-app.js/app-pages-internals.js quando um build é executado enquanto o dev está ativo. Ambas as pastas são geradas e ignoradas no Git e ESLint. Após mudar a configuração, reiniciar o dev se a recarga automática não acontecer.
