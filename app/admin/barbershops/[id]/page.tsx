@@ -1,3 +1,7 @@
+import { getFinancialReport } from "@/_data/get-financial-report"
+import { financialPeriod, money } from "@/_lib/financial"
+import FinancialReport from "./_components/financial-report"
+import PaymentControl from "./_components/payment-control"
 import { Badge } from "@/components/ui/badge"
 import { bookingStatusLabels } from "@/_lib/booking-status"
 import CompleteBookingButton from "@/_components/ui/complete-booking-button"
@@ -15,6 +19,13 @@ import { WorkingHoursForm } from "./_components/working-hours-form"
 import { ProfessionalList } from "./_components/professional-list"
 
 interface BarbershopDetailsPageProps {
+  searchParams?: {
+    period?: string
+    start?: string
+    end?: string
+    dimension?: string
+    pending?: string
+  }
   params: {
     id?: string
   }
@@ -22,6 +33,7 @@ interface BarbershopDetailsPageProps {
 
 const BarbershopDetailsPage = async ({
   params,
+  searchParams = {},
 }: BarbershopDetailsPageProps) => {
   if (!params.id) return redirect("/")
   try {
@@ -62,11 +74,36 @@ const BarbershopDetailsPage = async ({
   const futureBookings = allBookings.filter(
     (b) => b.status === "CONFIRMED" && b.date >= new Date(),
   )
-  const totalRevenue = futureBookings.reduce(
-    (sum, booking) =>
-      sum + (booking.service ? Number(booking.service.price) : 0),
-    0,
+  let period
+  let periodError: string | undefined
+  try {
+    period = financialPeriod(
+      searchParams.period,
+      searchParams.start,
+      searchParams.end,
+    )
+  } catch {
+    period = financialPeriod()
+    periodError = "Período inválido: confira as datas (máximo dez anos)."
+  }
+  const dimension = ["date", "professional", "service"].includes(
+    searchParams.dimension ?? "",
   )
+    ? searchParams.dimension!
+    : "date"
+  const report = await getFinancialReport(barbershop.id, period, dimension)
+  const pendingIds = new Set(report.summary.pendingIds)
+  const visibleBookings =
+    searchParams.pending === "1"
+      ? allBookings.filter((booking) => pendingIds.has(booking.id))
+      : allBookings
+  const basePath = `/admin/barbershops/${barbershop.id}`
+  const clearQuery = new URLSearchParams({
+    period: period.key,
+    start: period.start,
+    end: period.end,
+    dimension,
+  })
 
   return (
     <main className="studio-shell admin-workspace">
@@ -91,6 +128,7 @@ const BarbershopDetailsPage = async ({
           ["equipe", "Equipe"],
           ["servicos", "Serviços"],
           ["agenda", "Agenda"],
+          ["financeiro", "Financeiro"],
         ].map(([id, label]) => (
           <Button key={id} asChild variant="secondary">
             <a href={`#${id}`}>{label}</a>
@@ -102,13 +140,24 @@ const BarbershopDetailsPage = async ({
       </nav>
       <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="admin-panel">
-          <p className="text-sm text-muted-foreground">Receita prevista</p>
-          <p className="mt-3 text-3xl font-medium tabular-nums">
-            {Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(totalRevenue)}
+          <p className="text-sm text-muted-foreground">
+            Receita prevista (mês atual)
           </p>
+          <p className="mt-3 text-3xl font-medium tabular-nums">
+            {money(report.monthSummary.projected)}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Projeção das confirmadas do mês, não receita recebida.
+          </p>
+          <Button
+            asChild
+            variant="outline"
+            className="mt-4 h-auto whitespace-normal"
+          >
+            <Link href={`${basePath}?period=month#financeiro`}>
+              Ver relatório completo
+            </Link>
+          </Button>
         </div>
         <div className="admin-panel">
           <p className="text-sm text-muted-foreground">Agendamentos futuros</p>
@@ -168,12 +217,25 @@ const BarbershopDetailsPage = async ({
               Agendamentos e histórico
             </h2>
             <div className="space-y-1">
-              {allBookings.length === 0 && (
+              {searchParams.pending === "1" && (
+                <p className="py-3 text-sm">
+                  Pagamentos pendentes de{" "}
+                  {period.start.split("-").reverse().join("/")} a{" "}
+                  {period.end.split("-").reverse().join("/")}.{" "}
+                  <Link
+                    href={`${basePath}?${clearQuery}#agenda`}
+                    className="underline"
+                  >
+                    Ver toda a agenda
+                  </Link>
+                </p>
+              )}
+              {visibleBookings.length === 0 && (
                 <p className="py-8 text-sm text-muted-foreground">
                   Os agendamentos aparecerão aqui quando houver reservas.
                 </p>
               )}
-              {allBookings.map((booking) => (
+              {visibleBookings.map((booking) => (
                 <div
                   key={booking.id}
                   className="flex flex-wrap items-start justify-between gap-4 border-t py-5"
@@ -186,6 +248,22 @@ const BarbershopDetailsPage = async ({
                     <Badge variant="secondary">
                       {bookingStatusLabels[booking.status]}
                     </Badge>
+                    {booking.status === "COMPLETED" && (
+                      <PaymentControl
+                        bookingId={booking.id}
+                        price={booking.priceAtBooking.toString()}
+                        paidAmount={booking.paidAmount?.toString() ?? null}
+                        paymentMethod={booking.paymentMethod}
+                        paidAt={
+                          booking.paidAt
+                            ? formatBookingDate(
+                                booking.paidAt,
+                                "yyyy-MM-dd'T'HH:mm",
+                              )
+                            : ""
+                        }
+                      />
+                    )}
                     {booking.status === "CONFIRMED" &&
                       booking.endsAt <= new Date() && (
                         <CompleteBookingButton bookingId={booking.id} />
@@ -208,6 +286,13 @@ const BarbershopDetailsPage = async ({
           </div>
         </div>
       </div>
+      <FinancialReport
+        report={report}
+        period={period}
+        basePath={basePath}
+        dimension={dimension}
+        periodError={periodError}
+      />
     </main>
   )
 }

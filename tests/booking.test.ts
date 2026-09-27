@@ -45,6 +45,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   mocks.session.mockResolvedValue({ user: { id: "user" } })
   mocks.service.mockResolvedValue({
+    price: "45.50",
     durationMinutes: 30,
     barbershopId: "shop",
     professionals: [{ id: "professional", barbershopId: "shop" }],
@@ -115,6 +116,7 @@ test("reserva válida usa o usuário da sessão e transação serializável", as
       professionalId: "professional",
       date,
       userId: "user",
+      priceAtBooking: "45.50",
       durationMinutes: 30,
       endsAt: new Date(date.getTime() + 30 * 60000),
       status: "CONFIRMED",

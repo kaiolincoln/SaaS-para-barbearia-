@@ -60,6 +60,7 @@ export const createBooking = async (params: CreateBookingParams) => {
             date: params.date,
             endsAt,
             durationMinutes: service.durationMinutes,
+            priceAtBooking: service.price,
             userId: session.user.id,
             status: "CONFIRMED",
           },

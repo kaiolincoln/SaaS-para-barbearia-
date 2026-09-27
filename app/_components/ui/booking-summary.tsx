@@ -4,6 +4,7 @@ import { formatBookingDate } from "@/_lib/booking-time"
 interface BookingSummaryProps {
   service: BarbershopService
   selectedDate: Date
+  priceAtBooking?: string
   durationMinutes?: number
   professional?: Professional
 }
@@ -13,6 +14,7 @@ const BookingSummary = ({
   selectedDate,
   professional,
   durationMinutes = service.durationMinutes,
+  priceAtBooking,
 }: BookingSummaryProps) => {
   return (
     <div className="space-y-3 rounded-md border p-5">
@@ -22,7 +24,7 @@ const BookingSummary = ({
           {Intl.NumberFormat("pt-BR", {
             style: "currency",
             currency: "BRL",
-          }).format(Number(service.price))}
+          }).format(Number(priceAtBooking ?? service.price))}
         </p>
       </div>
       <div className="flex justify-between">

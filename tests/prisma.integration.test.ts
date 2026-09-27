@@ -26,6 +26,9 @@ vi.mock("@/_lib/prisma", async () => {
   }
 })
 import { db } from "@/_lib/prisma"
+import { registerPayment } from "@/_actions/register-payment"
+import { getFinancialReport } from "@/_data/get-financial-report"
+import { financialPeriod } from "@/_lib/financial"
 import { createBooking } from "@/_actions/create-booking"
 import { deleteProfessional } from "@/_actions/delete-professional"
 import { deleteBooking } from "@/_actions/delete-booking"
@@ -244,6 +247,55 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)(
         "success",
         false,
       )
+    })
+    test("historical prices and manual payment correction persist with PostgreSQL", async () => {
+      session.mockResolvedValue({ user: { id: ownerId, role: "USER" } })
+      const confirmed = await db.booking.findFirstOrThrow({
+        where: { professionalId, status: "CONFIRMED" },
+      })
+      expect(confirmed.priceAtBooking.toString()).toBe("30")
+      await db.barbershopService.update({
+        where: { id: serviceId },
+        data: { price: 99 },
+      })
+      expect(
+        (
+          await db.booking.findUniqueOrThrow({ where: { id: confirmed.id } })
+        ).priceAtBooking.toString(),
+      ).toBe("30")
+      const completed = await db.booking.findFirstOrThrow({
+        where: { professionalId, status: "COMPLETED" },
+      })
+      const data = new FormData()
+      data.set("bookingId", completed.id)
+      data.set("paidAmount", "45.50")
+      data.set("paymentMethod", "PIX")
+      data.set("paidAt", "2020-01-07T23:50")
+      expect(await registerPayment(data)).toHaveProperty("success", true)
+      let report = await getFinancialReport(
+        shopId,
+        financialPeriod("custom", "2020-01-07", "2020-01-07"),
+      )
+      expect(report.summary.received).toBe(4550)
+      data.set("paidAmount", "40.25")
+      data.set("paymentMethod", "DINHEIRO")
+      expect(await registerPayment(data)).toHaveProperty("success", true)
+      report = await getFinancialReport(
+        shopId,
+        financialPeriod("custom", "2020-01-07", "2020-01-07"),
+      )
+      expect(report.summary.received).toBe(4025)
+      expect(
+        report.rows.find((r) => r.id === completed.id)?.paymentMethod,
+      ).toBe("DINHEIRO")
+      session.mockResolvedValue({
+        user: { id: randomUUID(), role: "BARBERSHOP_ADMIN" },
+      })
+      await expect(
+        getFinancialReport(shopId, financialPeriod()),
+      ).rejects.toThrow()
+      expect(await registerPayment(data)).toHaveProperty("success", false)
+      session.mockResolvedValue({ user: { id: ownerId, role: "USER" } })
     })
   },
 )

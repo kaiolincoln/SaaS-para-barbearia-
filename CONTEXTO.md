@@ -77,7 +77,7 @@ Onda 4.3: BarbershopService.durationMinutes e Booking.durationMinutes têm defau
 
 Onda 4.4: Review possui bookingId único, userId, barbershopId, rating (CHECK 1–5), comment opcional e createdAt. As FKs restringem exclusão; a action centraliza autorização pelo titular de reserva COMPLETED. Não existem avaliações automáticas ou valores fictícios.
 
-Não há preço histórico nem pagamento. Receita futura considera apenas CONFIRMED no futuro, somando preços atuais; não representa receita recebida.
+Booking.priceAtBooking (Decimal 10,2) congela o preço na criação. Reservas anteriores ao campo recebem o preço do serviço na migration como aproximação histórica. Booking.paidAmount, paymentMethod e paidAt são opcionais e registram manualmente um único pagamento por reserva COMPLETED. PaymentMethod: DINHEIRO, CARTAO_DEBITO, CARTAO_CREDITO, PIX ou OUTRO. Correções sobrescrevem o registro com aviso na interface; não há gateway, split, estorno ou trilha de auditoria de correções.
 
 O banco não impõe unicidade de profissional/horário nem a igualdade de barbearia entre profissional e serviço na relação muitos-para-muitos. As chaves estrangeiras das reservas restringem exclusões de registros relacionados.
 
@@ -249,4 +249,19 @@ Tela interna com título da barbearia, atalhos de âncora para expediente/equipe
 
 ## Adendo financeiro — integração pendente
 
-O botão Salvar do expediente usa a variante primária vermelha. O adendo financeiro solicita integração na navegação da própria página administrativa, resumo mensal da projeção e registro de pagamento inline em reservas COMPLETED, preservando Equipe e Serviços. As seções 2–4 do prompt original não foram recebidas; implementação de relatório e persistência de pagamentos aguarda essas definições. A navegação atual usa âncoras, não painéis de abas exclusivos.
+O botão Salvar do expediente usa a variante primária vermelha. O adendo financeiro solicita integração na navegação da própria página administrativa, resumo mensal da projeção e registro de pagamento inline em reservas COMPLETED, preservando Equipe e Serviços. O prompt original foi recebido depois; relatório e persistência de pagamentos foram implementados conforme a seção 16. A navegação atual usa âncoras, não painéis de abas exclusivos.
+
+
+## 16. Controle de caixa
+
+Financeiro integrado como seção/âncora da mesma página administrativa. Leitura getFinancialReport e action registerPayment passam por requireBarbershopAccess; somente titular da barbearia ou SUPER_ADMIN. Tabela financeira seleciona nome do cliente, sem contato. Equipe e Serviços mantêm sua estrutura.
+
+financial.ts centraliza períodos (hoje, semana segunda–domingo, mês, mês anterior e personalizado de até dez anos), America/Sao_Paulo e limites semiabertos via bookingDayBounds. Soma em centavos: projetada usa snapshots de CONFIRMED por data da reserva; recebida usa paidAmount de COMPLETED por paidAt. CANCELLED nunca contribui. Conversão recebido/projetado pode exceder 100%; denominador zero mostra traço.
+
+Resumo do mês e relatório usam summarizeFinance e uma leitura compartilhada. Pendentes concluídas do período geram IDs usados diretamente no filtro da agenda. Registro/correção usa o mesmo diálogo na agenda e tabela; valor pré-preenchido pelo snapshot, paidAt vazio usa agora e datas manuais usam São Paulo. Valores não negativos com duas casas (zero permitido para cortesia), sem datas futuras. Transação serializável e CHECK exigem campos de pagamento completos e reserva COMPLETED.
+
+Gráfico SVG sem dependências adicionais, com tabela acessível: dias até 31, semanas até 180, meses acima; agrupamento opcional por serviço/profissional. Detalhamento inclui reservas com atendimento OU recebimento no período para explicar os totais, ordenado por atendimento decrescente. Preço histórico também aparece no resumo da reserva do cliente. Não há paginação financeira nesta versão.
+
+Migration booking_manual_payments é aditiva: snapshot com default e backfill documentado, pagamento nullable e constraints. Não executar seed para atualizar bases reais.
+
+Migration financeira aplicada ao PostgreSQL local de testes e ao Neon em 27/09/2026; migrate status sem pendências. Prisma Client regenerado e servidor de desenvolvimento reiniciado após liberar a DLL no Windows.

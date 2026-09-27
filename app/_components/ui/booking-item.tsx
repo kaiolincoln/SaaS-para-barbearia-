@@ -163,6 +163,7 @@ const BookingItem = ({ booking }: BookingItemProps) => {
                   service={booking.service}
                   selectedDate={booking.date}
                   durationMinutes={booking.durationMinutes}
+                  priceAtBooking={booking.priceAtBooking.toString()}
                 />
               </div>
 

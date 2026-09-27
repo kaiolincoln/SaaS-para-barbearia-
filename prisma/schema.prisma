@@ -64,7 +64,19 @@ model BarbershopService {
   professionals Professional[]
 }
 
+enum PaymentMethod {
+  DINHEIRO
+  CARTAO_DEBITO
+  CARTAO_CREDITO
+  PIX
+  OUTRO
+}
+
 model Booking {
+  priceAtBooking Decimal @default(0) @db.Decimal(10, 2)
+  paidAmount Decimal? @db.Decimal(10, 2)
+  paymentMethod PaymentMethod?
+  paidAt DateTime?
   status BookingStatus @default(CONFIRMED)
   review Review?
   durationMinutes Int @default(30)

@@ -118,6 +118,7 @@ async function main() {
         data: {
           userId: adminUser.id,
           serviceId: createdServices[0].id,
+          priceAtBooking: createdServices[0].price,
           professionalId: professional.id,
           date,
           durationMinutes: createdServices[0].durationMinutes,
