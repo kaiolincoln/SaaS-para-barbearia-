@@ -108,7 +108,7 @@ const DayRow = ({
       </div>
 
       <Button
-        variant="outline"
+        variant="default"
         type="submit"
         disabled={isSubmitting}
         className="w-full sm:w-auto"

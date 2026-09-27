@@ -245,3 +245,8 @@ Carousel é um wrapper cliente apenas de apresentação: setas acessíveis rolam
 Branch `feat/admin-estudio`: listagem com largura limitada, navegação para o site, contagem das barbearias já carregadas, capas maiores e Gerenciar na variante primária. Cards compartilham hover/foco duotone da home.
 
 Tela interna com título da barbearia, atalhos de âncora para expediente/equipe/serviços/agenda e link público. Indicadores preservam os cálculos existentes. Painéis em surface-1, listas separadas por hairlines, ações com quebra responsiva e estados vazios explícitos. Duração exibida usa o campo existente; nenhuma action, consulta, autorização ou migration alterada. Remover fica visualmente secundário na lista e mantém o diálogo de confirmação.
+
+
+## Adendo financeiro — integração pendente
+
+O botão Salvar do expediente usa a variante primária vermelha. O adendo financeiro solicita integração na navegação da própria página administrativa, resumo mensal da projeção e registro de pagamento inline em reservas COMPLETED, preservando Equipe e Serviços. As seções 2–4 do prompt original não foram recebidas; implementação de relatório e persistência de pagamentos aguarda essas definições. A navegação atual usa âncoras, não painéis de abas exclusivos.
