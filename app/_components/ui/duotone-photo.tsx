@@ -1,7 +1,7 @@
 "use client"
 
 import Image, { type ImageProps } from "next/image"
-import { useId } from "react"
+import { useId, type CSSProperties } from "react"
 import { cn } from "@/_lib/utils"
 
 /** Cover imagery only: luminance maps exactly from ink to bone in sRGB. */
@@ -40,8 +40,8 @@ export default function DuotonePhoto({
       <Image
         {...props}
         alt={alt}
-        className={cn("object-cover", className)}
-        style={{ ...style, filter: `url(#${id})` }}
+        className={cn("photo-duotone object-cover", className)}
+        style={{ ...style, "--duotone-filter": `url(#${id})` } as CSSProperties}
       />
     </>
   )

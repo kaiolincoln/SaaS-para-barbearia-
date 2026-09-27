@@ -227,3 +227,14 @@ Contraste: bone sobre ink com contraste superior a 14:1; warm-gray/ink 4,75:1. W
 Next dev usa `.next-dev`; build e start usam `.next`. A separação evita 404 de main-app.js/app-pages-internals.js quando um build é executado enquanto o dev está ativo. Ambas as pastas são geradas e ignoradas no Git e ESLint. Após mudar a configuração, reiniciar o dev se a recarga automática não acontecer.
 
 Correção posterior à captura de tela: a coluna User.image já existia no Neon e foi reconciliada no histórico via migrate resolve; as migrations de duração e status/avaliações foram aplicadas com migrate deploy. Sem reset/seed. Isso substitui as observações anteriores de migrations pendentes.
+
+
+## 14. Refinamento visual estúdio
+
+Branch `feat/refinamento-estudio`. Mudança somente de apresentação: CTA Reservar usa a variante primária vermelha e hover escurecido; superfície 1 #242426 e superfície 2 #2D2D2F. Calendário mantém regras de seleção e usa a segunda superfície para o estado selecionado.
+
+A home destaca no hero a primeira barbearia do ranking real existente. Sem reviews, o desempate estável do ranking é usado; Barbershop não possui createdAt e nenhum campo/consulta foi adicionado para simular recência. Hero de 28vh mobile/40vh desktop, nome e endereço sobre foto duotone; pequenos fundos locais sob o texto garantem contraste mesmo em imagens claras. Saudação/data são secundárias.
+
+Recomendados coloca o mesmo destaque primeiro em duas colunas, com título maior; Populares mantém cards uniformes. Cards sem avaliações omitem o badge. Hover e focus-within revelam a cor original por CSS, elevam a superfície, mostram borda e sublinhado vermelhos, sem escala/sombra. DuotonePhoto expõe `photo-duotone` e variável CSS `--duotone-filter`; profissionais não são afetados.
+
+Carousel é um wrapper cliente apenas de apresentação: setas acessíveis rolam a faixa, toque/teclado continuam disponíveis, scrollbar oculta em Firefox/WebKit e rolagem imediata com movimento reduzido. Nenhuma lógica de negócio, action, consulta ou migration alterada. Revisão renderizada permanece pendente por bloqueio prévio de captura do navegador; as etapas foram descritas durante a execução.

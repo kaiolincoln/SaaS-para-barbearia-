@@ -4,6 +4,11 @@
 
 @layer base {
   :root {
+    --surface: #242426;
+    --surface-1: #242426;
+    --surface-2: #2d2d2f;
+    --tattoo-red: #c4402d;
+    --bone: #edeae4;
     --background: 240 3.571% 10.98%;
     --foreground: 40 20% 91.176%;
     --card: 240 2.703% 14.51%;
@@ -16,7 +21,7 @@
     --secondary-foreground: 40 20% 91.176%;
     --muted: 240 2.703% 14.51%;
     --muted-foreground: 36 4.098% 52.157%;
-    --accent: 240 2.703% 14.51%;
+    --accent: 240 2.174% 18.039%;
     --accent-foreground: 40 20% 91.176%;
     --destructive: 7.55 62.656% 47.255%;
     --destructive-foreground: 40 20% 91.176%;
@@ -72,5 +77,74 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+.carousel-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-duotone {
+  filter: var(--duotone-filter);
+}
+.barbershop-card {
+  background: var(--surface-1);
+  border: 1px solid transparent;
+  transition:
+    border-color 200ms ease,
+    background-color 200ms ease;
+}
+.barbershop-card .text-muted-foreground {
+  color: hsl(var(--foreground) / 0.75);
+}
+.barbershop-card .photo-duotone {
+  transition: filter 350ms ease;
+}
+.barbershop-card .card-name {
+  position: relative;
+  display: inline-block;
+  overflow-wrap: anywhere;
+}
+.barbershop-card .card-name::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 0;
+  height: 2px;
+  background: var(--tattoo-red);
+  transition: width 200ms ease;
+}
+.barbershop-card:focus-within {
+  background: var(--surface-2);
+  border-color: var(--tattoo-red);
+}
+.barbershop-card:focus-within .photo-duotone {
+  filter: grayscale(0) contrast(1.05);
+}
+.barbershop-card:focus-within .card-name::after {
+  width: 100%;
+}
+@media (hover: hover) {
+  .barbershop-card:hover {
+    background: var(--surface-2);
+    border-color: var(--tattoo-red);
+  }
+  .barbershop-card:hover .photo-duotone {
+    filter: grayscale(0) contrast(1.05);
+  }
+  .barbershop-card:hover .card-name::after {
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .barbershop-card,
+  .barbershop-card .photo-duotone,
+  .barbershop-card .card-name::after {
+    transition: none;
   }
 }
