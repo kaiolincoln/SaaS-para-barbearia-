@@ -225,3 +225,5 @@ Contraste: bone sobre ink com contraste superior a 14:1; warm-gray/ink 4,75:1. W
 ## Cache de desenvolvimento
 
 Next dev usa `.next-dev`; build e start usam `.next`. A separação evita 404 de main-app.js/app-pages-internals.js quando um build é executado enquanto o dev está ativo. Ambas as pastas são geradas e ignoradas no Git e ESLint. Após mudar a configuração, reiniciar o dev se a recarga automática não acontecer.
+
+Correção posterior à captura de tela: a coluna User.image já existia no Neon e foi reconciliada no histórico via migrate resolve; as migrations de duração e status/avaliações foram aplicadas com migrate deploy. Sem reset/seed. Isso substitui as observações anteriores de migrations pendentes.
