@@ -59,7 +59,7 @@ export const ServiceListItem = ({
   }
 
   return (
-    <div className="flex items-center justify-between rounded-md border bg-secondary p-3">
+    <div className="flex flex-wrap items-center justify-between gap-4 border-t py-4">
       <div>
         <p className="font-semibold">{service.name}</p>
         <p className="text-sm text-muted-foreground">
@@ -67,6 +67,9 @@ export const ServiceListItem = ({
             style: "currency",
             currency: "BRL",
           }).format(Number(service.price))}
+        </p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {service.durationMinutes} minutos
         </p>
       </div>
       <div className="flex gap-2">
@@ -90,7 +93,7 @@ export const ServiceListItem = ({
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm" disabled={isDeleteLoading}>
+            <Button variant="ghost" size="sm" disabled={isDeleteLoading}>
               Remover
             </Button>
           </AlertDialogTrigger>
@@ -102,7 +105,7 @@ export const ServiceListItem = ({
                 &quot;? Esta ação não pode ser desfeita.
               </AlertDialogDescription>
             </AlertDialogHeader>
-            <AlertDialogFooter className="flex-row gap-3">
+            <AlertDialogFooter className="flex-col gap-3 sm:flex-row">
               <AlertDialogCancel className="mt-0 w-full">
                 Voltar
               </AlertDialogCancel>

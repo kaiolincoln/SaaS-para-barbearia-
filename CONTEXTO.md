@@ -238,3 +238,10 @@ A home destaca no hero a primeira barbearia do ranking real existente. Sem revie
 Recomendados coloca o mesmo destaque primeiro em duas colunas, com título maior; Populares mantém cards uniformes. Cards sem avaliações omitem o badge. Hover e focus-within revelam a cor original por CSS, elevam a superfície, mostram borda e sublinhado vermelhos, sem escala/sombra. DuotonePhoto expõe `photo-duotone` e variável CSS `--duotone-filter`; profissionais não são afetados.
 
 Carousel é um wrapper cliente apenas de apresentação: setas acessíveis rolam a faixa, toque/teclado continuam disponíveis, scrollbar oculta em Firefox/WebKit e rolagem imediata com movimento reduzido. Nenhuma lógica de negócio, action, consulta ou migration alterada. Revisão renderizada permanece pendente por bloqueio prévio de captura do navegador; as etapas foram descritas durante a execução.
+
+
+## 15. Administração — refinamento visual
+
+Branch `feat/admin-estudio`: listagem com largura limitada, navegação para o site, contagem das barbearias já carregadas, capas maiores e Gerenciar na variante primária. Cards compartilham hover/foco duotone da home.
+
+Tela interna com título da barbearia, atalhos de âncora para expediente/equipe/serviços/agenda e link público. Indicadores preservam os cálculos existentes. Painéis em surface-1, listas separadas por hairlines, ações com quebra responsiva e estados vazios explícitos. Duração exibida usa o campo existente; nenhuma action, consulta, autorização ou migration alterada. Remover fica visualmente secundário na lista e mantém o diálogo de confirmação.

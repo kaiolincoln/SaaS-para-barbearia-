@@ -61,7 +61,7 @@ export const ProfessionalListItem = ({
 
   // O resto do seu JSX continua o mesmo...
   return (
-    <div className="flex items-center justify-between rounded-md border p-3">
+    <div className="flex flex-wrap items-center justify-between gap-4 border-t py-4">
       <div className="flex items-center gap-3">
         <Image
           src={professional.imageUrl || "/user-placeholder.png"}
@@ -92,7 +92,7 @@ export const ProfessionalListItem = ({
 
         <AlertDialog>
           <AlertDialogTrigger asChild>
-            <Button variant="destructive" size="sm">
+            <Button variant="ghost" size="sm">
               Remover
             </Button>
           </AlertDialogTrigger>

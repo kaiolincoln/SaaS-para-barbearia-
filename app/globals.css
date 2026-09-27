@@ -148,3 +148,12 @@
     transition: none;
   }
 }
+
+@layer components {
+  .admin-panel {
+    @apply min-w-0 rounded-md border bg-card p-5 sm:p-6;
+  }
+  .admin-panel .text-muted-foreground {
+    color: hsl(var(--foreground) / 0.75);
+  }
+}

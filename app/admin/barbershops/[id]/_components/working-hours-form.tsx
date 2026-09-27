@@ -58,7 +58,7 @@ const DayRow = ({
   return (
     <form
       onSubmit={handleFormSubmit}
-      className="flex flex-col justify-between gap-4 rounded-md border p-3 sm:flex-row sm:items-center"
+      className="grid grid-cols-1 items-end gap-4 border-t py-4 sm:grid-cols-[1fr_auto_auto]"
     >
       {/* Inputs ocultos para enviar dados fixos */}
       <input type="hidden" name="barbershopId" value={barbershopId} />
@@ -76,7 +76,7 @@ const DayRow = ({
         </Label>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="grid min-w-0 grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
           <Label htmlFor={`start-time-${dayIndex}`} className="text-xs">
             Início
@@ -88,7 +88,7 @@ const DayRow = ({
             defaultValue={initialDayData?.startTime ?? "09:00"}
             disabled={!isOpen}
             required={isOpen}
-            className="w-28"
+            className="w-full min-w-0 sm:w-28"
           />
         </div>
         <div className="flex flex-col gap-1">
@@ -102,12 +102,13 @@ const DayRow = ({
             defaultValue={initialDayData?.endTime ?? "18:00"}
             disabled={!isOpen}
             required={isOpen}
-            className="w-28"
+            className="w-full min-w-0 sm:w-28"
           />
         </div>
       </div>
 
       <Button
+        variant="outline"
         type="submit"
         disabled={isSubmitting}
         className="w-full sm:w-auto"

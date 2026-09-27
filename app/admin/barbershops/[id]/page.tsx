@@ -69,63 +69,88 @@ const BarbershopDetailsPage = async ({
   )
 
   return (
-    <div className="p-5 lg:p-10">
+    <main className="studio-shell admin-workspace">
       <Button asChild variant="outline" className="mb-6">
         <Link href="/admin">
           <ChevronLeftIcon size={16} className="mr-2" />
-          Voltar para o Dashboard
+          Todas as barbearias
         </Link>
       </Button>
 
-      <h1 className="mb-6 text-3xl font-black tracking-tight sm:text-5xl">
-        {barbershop.name} - Gerenciamento
-      </h1>
+      <h1 className="studio-title mb-4">{barbershop.name}</h1>
       <p className="mb-6 text-muted-foreground">
         Aqui você pode gerenciar os serviços e informações da sua barbearia.
       </p>
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-md border p-4">
-          <p className="text-sm text-muted-foreground">Faturamento (Futuro)</p>
-          <p className="text-2xl font-medium">
+      <nav
+        className="mb-8 flex flex-wrap gap-2 border-b pb-5"
+        aria-label="Seções da barbearia"
+      >
+        {[
+          ["expediente", "Expediente"],
+          ["equipe", "Equipe"],
+          ["servicos", "Serviços"],
+          ["agenda", "Agenda"],
+        ].map(([id, label]) => (
+          <Button key={id} asChild variant="secondary">
+            <a href={`#${id}`}>{label}</a>
+          </Button>
+        ))}
+        <Button asChild variant="outline">
+          <Link href={`/barbershops/${barbershop.id}`}>Ver página pública</Link>
+        </Button>
+      </nav>
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="admin-panel">
+          <p className="text-sm text-muted-foreground">Receita prevista</p>
+          <p className="mt-3 text-3xl font-medium tabular-nums">
             {Intl.NumberFormat("pt-BR", {
               style: "currency",
               currency: "BRL",
             }).format(totalRevenue)}
           </p>
         </div>
-        <div className="rounded-md border p-4">
-          <p className="text-sm text-muted-foreground">Agendamentos Futuros</p>
-          <p className="text-2xl font-medium">{futureBookings.length}</p>
+        <div className="admin-panel">
+          <p className="text-sm text-muted-foreground">Agendamentos futuros</p>
+          <p className="mt-3 text-3xl font-medium tabular-nums">
+            {futureBookings.length}
+          </p>
         </div>
       </div>
 
-      <div className="mt-6 rounded-md border p-4">
+      <section id="expediente" className="admin-panel scroll-mt-6">
         <h2 className="mb-4 text-lg font-semibold">
-          Horários de Funcionamento
+          Horários de funcionamento
         </h2>
         <WorkingHoursForm
           barbershopId={barbershop.id}
           initialData={barbershop.workingHours}
         />
-      </div>
+      </section>
 
-      <div className="mt-6 flex flex-col gap-6 lg:flex-row">
-        <div className="flex flex-1 flex-col gap-6">
-          <ProfessionalList
-            professionals={barbershop.professionals}
-            barbershopId={barbershop.id}
-          />
+      <div className="mt-8 flex flex-col gap-6 lg:flex-row">
+        <div className="flex min-w-0 flex-1 flex-col gap-6">
+          <div id="equipe" className="scroll-mt-6">
+            <ProfessionalList
+              professionals={barbershop.professionals}
+              barbershopId={barbershop.id}
+            />
+          </div>
 
-          <div className="rounded-md border p-4">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Serviços Cadastrados</h2>
+          <div id="servicos" className="admin-panel scroll-mt-6">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+              <h2 className="text-lg font-semibold">Serviços</h2>
               <AddServiceSheet
                 barbershopId={barbershop.id}
                 professionals={barbershop.professionals}
               />
             </div>
             <div className="space-y-2">
+              {barbershop.services.length === 0 && (
+                <p className="py-6 text-sm text-muted-foreground">
+                  Nenhum serviço cadastrado.
+                </p>
+              )}
               {barbershop.services.map((service) => (
                 <ServiceListItem
                   key={service.id}
@@ -137,18 +162,23 @@ const BarbershopDetailsPage = async ({
           </div>
         </div>
 
-        <div className="flex-1">
-          <div className="rounded-md border p-4">
+        <div id="agenda" className="min-w-0 flex-1 scroll-mt-6">
+          <div className="admin-panel">
             <h2 className="mb-4 text-lg font-semibold">
               Agendamentos e histórico
             </h2>
-            <div className="space-y-3">
+            <div className="space-y-1">
+              {allBookings.length === 0 && (
+                <p className="py-8 text-sm text-muted-foreground">
+                  Os agendamentos aparecerão aqui quando houver reservas.
+                </p>
+              )}
               {allBookings.map((booking) => (
                 <div
                   key={booking.id}
-                  className="flex items-center justify-between rounded-md border bg-secondary p-3"
+                  className="flex flex-wrap items-start justify-between gap-4 border-t py-5"
                 >
-                  <div className="flex flex-col">
+                  <div className="flex min-w-0 flex-col items-start gap-2">
                     <p className="font-semibold">{booking.service.name}</p>
                     <p className="text-sm text-muted-foreground">
                       {booking.user.name}
@@ -178,7 +208,7 @@ const BarbershopDetailsPage = async ({
           </div>
         </div>
       </div>
-    </div>
+    </main>
   )
 }
 

@@ -7,7 +7,7 @@ import Link from "next/link"
 import { db } from "@/_lib/prisma"
 import { authOptions } from "@/_lib/auth"
 import { Button } from "@/components/ui/button"
-import { MapPinIcon } from "lucide-react"
+import { ArrowUpRight, ChevronLeft, MapPinIcon } from "lucide-react"
 
 const AdminPage = async () => {
   const session = await getServerSession(authOptions)
@@ -22,44 +22,72 @@ const AdminPage = async () => {
   })
 
   return (
-    <div className="p-5 lg:p-10">
-      <h1 className="mb-6 text-3xl font-black tracking-tight sm:text-5xl">
-        Dashboard
-      </h1>
-      <p className="text-muted-foreground">
-        Bem-vindo de volta, {session.user.name}!
-      </p>
-
+    <main className="studio-shell">
+      <nav
+        className="mb-10 flex items-center justify-between border-b pb-5"
+        aria-label="Navegação administrativa"
+      >
+        <Link href="/" className="text-xl font-black tracking-tighter">
+          FSW BARBER
+        </Link>
+        <Button asChild variant="ghost">
+          <Link href="/">
+            <ChevronLeft size={16} />
+            Voltar ao site
+          </Link>
+        </Button>
+      </nav>
+      <div className="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="studio-title mb-4">Seu estúdio</h1>
+          <p className="text-muted-foreground">
+            Bem-vindo de volta, {session.user.name}!
+          </p>
+        </div>
+        <p className="shrink-0 text-sm text-muted-foreground">
+          {barbershops.length}{" "}
+          {barbershops.length === 1
+            ? "barbearia para gerenciar"
+            : "barbearias para gerenciar"}
+        </p>
+      </div>
       {/* 4. Verifica se o usuário é dono de alguma barbearia */}
       {barbershops.length > 0 ? (
         <>
-          <h2 className="mt-6 text-lg font-semibold">Suas Barbearias</h2>
-          <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <h2 className="border-t pt-6 text-xl font-medium">Suas barbearias</h2>
+          <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
             {/* 5. Lista as barbearias do usuário */}
             {barbershops.map((barbershop) => (
               <div
                 key={barbershop.id}
-                className="overflow-hidden rounded-md border"
+                className="barbershop-card flex flex-col overflow-hidden rounded-md"
               >
-                <div className="relative h-40 w-full">
+                <div className="relative aspect-[16/10] w-full">
                   <DuotonePhoto
                     src={barbershop.imageUrl}
                     alt={barbershop.name}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 380px"
                     fill
                     className="object-cover"
                   />
                 </div>
-                <div className="p-3">
-                  <h3 className="font-bold">{barbershop.name}</h3>
-                  <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPinIcon size={14} />
+                <div className="flex flex-1 flex-col p-5">
+                  <h3 className="card-name w-fit text-2xl font-semibold">
+                    {barbershop.name}
+                  </h3>
+                  <div className="mb-6 mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+                    <MapPinIcon size={16} className="mt-0.5 shrink-0" />
                     {barbershop.address}
                   </div>
                   {/* Futuramente, você pode adicionar mais informações aqui */}
-                  <Button variant="secondary" className="mt-4 w-full" asChild>
+                  <Button
+                    variant="default"
+                    className="mt-auto w-full justify-between"
+                    asChild
+                  >
                     {/* O link para a página de gerenciamento detalhada */}
                     <Link href={`/admin/barbershops/${barbershop.id}`}>
-                      Gerenciar
+                      Gerenciar <ArrowUpRight aria-hidden="true" />
                     </Link>
                   </Button>
                 </div>
@@ -68,7 +96,7 @@ const AdminPage = async () => {
           </div>
         </>
       ) : (
-        <div className="mt-10 text-center">
+        <div className="mt-10 rounded-md border border-dashed bg-card px-5 py-12 text-center">
           <h2 className="text-xl font-semibold">
             Nenhuma barbearia encontrada.
           </h2>
@@ -78,7 +106,7 @@ const AdminPage = async () => {
           <Button className="mt-4">Cadastrar minha barbearia</Button>
         </div>
       )}
-    </div>
+    </main>
   )
 }
 

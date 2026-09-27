@@ -41,13 +41,13 @@ export const ProfessionalList = ({
   }
 
   return (
-    <div className="rounded-md border p-4">
+    <div className="admin-panel">
       {/* --- Seção para Adicionar Profissional (Mantida) --- */}
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Profissionais Cadastrados</h2>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <h2 className="text-lg font-semibold">Equipe</h2>
         <Sheet open={isAddSheetOpen} onOpenChange={setIsAddSheetOpen}>
           <SheetTrigger asChild>
-            <Button>Adicionar Profissional</Button>
+            <Button>Adicionar</Button>
           </SheetTrigger>
           <SheetContent>
             <SheetHeader className="mb-6">
